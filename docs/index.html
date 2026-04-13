@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VibeRadar — How well do you collaborate with AI?</title>
+<meta name="description" content="Grade your AI collaboration skills. VibeRadar analyzes your Claude Code sessions across 6 dimensions and gives you a score. 30 seconds. 100% local.">
+<meta property="og:title" content="VibeRadar — How well do you collaborate with AI?">
+<meta property="og:description" content="Are you an S or a D? Get your AI collaboration grade in 30 seconds. 6-dimension radar, actionable suggestions, plus a bonus MBTI archetype.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://leifdiao.github.io/vibe-radar/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VibeRadar — What's your AI collaboration grade?">
+<meta name="twitter:description" content="S? A? B? Grade your Claude Code collaboration skills in 30 seconds. Free, local, beautiful.">
+<style>
+  :root {
+    --bg-0: #06060b; --bg-1: #0e0e16; --bg-2: #16161f; --bg-3: #1e1e2a;
+    --text-1: #f3f4f6; --text-2: #d1d5db; --text-3: #9ca3af; --text-4: #6b7280; --text-5: #4b5563;
+    --border-1: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.08); --border-3: rgba(255,255,255,0.12);
+    --accent: #8b5cf6; --accent-2: #a78bfa; --accent-3: #c4b5fd;
+    --glow-blue: #60a5fa; --glow-cyan: #22d3ee; --glow-green: #22c55e;
+    --grade-s: #22c55e; --grade-a: #3b82f6; --grade-b: #eab308; --grade-c: #f97316; --grade-d: #ef4444;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", system-ui, sans-serif;
+    background: radial-gradient(ellipse at top left, rgba(139,92,246,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(96,165,250,0.04) 0%, transparent 50%), var(--bg-0);
+    color: var(--text-1); line-height: 1.65; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 36px; }
+
+  @keyframes holo { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  @keyframes pulse { 0%,100%{filter:drop-shadow(0 0 14px rgba(139,92,246,0.5))} 50%{filter:drop-shadow(0 0 26px rgba(139,92,246,0.8))} }
+  @keyframes glow { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+  /* ── Nav ── */
+  nav { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; letter-spacing:-0.3px; }
+  .brand-mark {
+    width:26px; height:26px; border-radius:7px;
+    background:linear-gradient(135deg,var(--accent),var(--glow-blue));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-size:13px;
+    box-shadow:0 0 14px rgba(139,92,246,0.3);
+  }
+  .brand-text { background:linear-gradient(135deg,var(--text-1),var(--text-3)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .nav-r { display:flex; align-items:center; gap:18px; }
+  .nav-r a { color:var(--text-4); text-decoration:none; font-size:13px; font-weight:500; transition:color .2s; }
+  .nav-r a:hover { color:var(--text-1); }
+  .lang-btn {
+    background:var(--bg-2); border:1px solid var(--border-3); color:var(--text-4);
+    padding:4px 12px; border-radius:999px; font-size:11px; font-weight:600; cursor:pointer;
+    transition:all .2s; font-family:inherit; letter-spacing:.3px;
+  }
+  .lang-btn:hover { background:var(--bg-3); color:var(--text-1); }
+
+  /* ── Hero (split) ── */
+  .hero { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; padding:72px 0 56px; position:relative; }
+  .hero::before {
+    content:""; position:absolute; top:-40%; right:-20%; width:700px; height:700px;
+    background:radial-gradient(circle,rgba(139,92,246,0.12),transparent 55%); pointer-events:none;
+  }
+  .hero-text { position:relative; z-index:1; }
+  .hero-badge {
+    display:inline-flex; padding:4px 12px; background:rgba(139,92,246,0.08);
+    border:1px solid rgba(139,92,246,0.18); border-radius:999px;
+    font-size:11px; font-weight:600; color:var(--accent-2); letter-spacing:.5px; margin-bottom:20px;
+  }
+  .hero h1 {
+    font-size:clamp(32px,5vw,52px); font-weight:800; letter-spacing:-2px;
+    line-height:1.1; margin:0 0 16px;
+  }
+  .hero h1 .g { background:linear-gradient(135deg,var(--accent-2),var(--glow-blue)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero-sub { font-size:16px; color:var(--text-3); line-height:1.65; margin:0 0 28px; max-width:440px; }
+  .hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
+  .btn {
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-family:inherit; cursor:pointer; border:none; transition:all .2s;
+  }
+  .btn-sm { padding:10px 22px; border-radius:10px; font-size:13px; font-weight:600; }
+  .btn-primary { background:linear-gradient(135deg,var(--accent),#7c3aed); color:#fff; box-shadow:0 0 24px rgba(139,92,246,0.3); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(139,92,246,0.45); }
+  .btn-ghost { background:transparent; color:var(--text-2); border:1px solid var(--border-3); }
+  .btn-ghost:hover { background:var(--bg-2); border-color:var(--accent); color:var(--text-1); }
+
+  /* Radar card in hero */
+  .hero-radar { position:relative; border-radius:22px; overflow:hidden; isolation:isolate; }
+  .hero-radar::before {
+    content:""; position:absolute; inset:0; border-radius:22px; padding:1.5px;
+    background:linear-gradient(135deg,rgba(139,92,246,.5),rgba(96,165,250,.3),rgba(34,211,238,.3),rgba(139,92,246,.5));
+    background-size:300% 300%; animation:holo 6s ease infinite;
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; z-index:2;
+  }
+  .hero-radar-inner {
+    background:
+      radial-gradient(ellipse at 30% 20%,rgba(139,92,246,.07) 0%,transparent 50%),
+      radial-gradient(ellipse at 70% 80%,rgba(96,165,250,.05) 0%,transparent 50%),
+      linear-gradient(170deg,var(--bg-1),var(--bg-0));
+    border-radius:22px; padding:20px 20px 24px; text-align:center; position:relative; overflow:hidden;
+  }
+  .hero-radar-head {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:8px; padding:0 4px;
+  }
+  .hero-radar-brand {
+    font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-5);
+    display:flex; align-items:center; gap:4px;
+  }
+  .hero-radar-brand svg { flex-shrink:0; color:var(--accent-2); }
+  .hero-radar-meta { font-size:9px; color:var(--text-5); font-weight:500; }
+  .radar-zone { position:relative; display:flex; justify-content:center; align-items:center; padding:4px 0; }
+  #pr { width:100%; max-width:300px; height:auto; }
+  #pr .gh { fill:none; stroke:rgba(139,92,246,.1); stroke-width:.7; }
+  #pr .sp { stroke:rgba(255,255,255,.04); stroke-width:.7; }
+  #pr .lb { fill:var(--text-3); font-size:10px; font-weight:600; font-family:inherit; }
+  #pr .sc { fill:var(--text-4); font-size:8px; font-weight:700; font-family:inherit; }
+  #pr .dp { fill:rgba(139,92,246,.12); stroke:var(--accent-2); stroke-width:2.2; stroke-linejoin:round; animation:pulse 3s ease-in-out infinite; }
+  #pr .dd { fill:var(--accent-2); stroke:var(--bg-0); stroke-width:1.5; }
+  .rc { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+  .rc-l { font-size:44px; font-weight:800; color:var(--grade-a); filter:drop-shadow(0 0 20px rgba(59,130,246,.5)); line-height:1; }
+  .rc-s { font-size:11px; font-weight:700; color:var(--text-4); margin-top:4px; font-variant-numeric:tabular-nums; }
+
+  /* Score pills grid (replaces bars) */
+  .score-pills {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+    margin-top:14px; padding-top:14px; border-top:1px solid var(--border-1);
+  }
+  .sp-item {
+    display:flex; align-items:center; gap:6px;
+    padding:6px 8px; background:rgba(255,255,255,.02);
+    border:1px solid var(--border-1); border-radius:8px;
+  }
+  .sp-score {
+    font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1;
+    min-width:24px;
+  }
+  .sp-info { flex:1; min-width:0; }
+  .sp-name { font-size:9px; color:var(--text-4); font-weight:600; line-height:1.2; }
+  .sp-bar { height:2px; background:var(--bg-3); border-radius:999px; margin-top:3px; overflow:hidden; }
+  .sp-fill { height:100%; border-radius:999px; }
+
+  /* ── Sections ── */
+  section { padding:72px 0; }
+  .stitle {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--text-4); margin-bottom:12px;
+  }
+  .stitle::before,.stitle::after { content:""; width:20px; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); }
+  .sheading { text-align:center; margin-bottom:44px; }
+  .sheading h2 { font-size:32px; font-weight:700; letter-spacing:-1.2px; margin:0 0 10px; }
+  .sheading p { color:var(--text-3); font-size:15px; margin:0 auto; max-width:500px; line-height:1.6; }
+
+  /* ── Report section (3 cards + pipeline) ── */
+  .report-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:40px; }
+  .rcard {
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:14px;
+    padding:24px 20px; text-align:center; transition:all .2s;
+  }
+  .rcard:hover { border-color:var(--border-3); }
+  .rcard-num { font-size:32px; font-weight:800; line-height:1; margin-bottom:10px; }
+  .rcard h3 { font-size:14px; font-weight:600; margin:0 0 5px; }
+  .rcard p { font-size:12px; color:var(--text-4); margin:0; line-height:1.5; }
+
+  /* Pipeline */
+  .pipeline {
+    display:flex; align-items:center; justify-content:center; gap:0;
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:16px;
+    padding:24px 32px; max-width:760px; margin:0 auto;
+  }
+  .pipe-step { text-align:center; flex:1; }
+  .pipe-step-label { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--text-5); margin-bottom:6px; }
+  .pipe-step-name { font-size:13px; font-weight:600; color:var(--text-2); }
+  .pipe-step-desc { font-size:11px; color:var(--text-4); margin-top:3px; }
+  .pipe-arrow { color:var(--accent); font-size:16px; padding:0 8px; flex-shrink:0; opacity:.5; }
+
+  /* ── 6 Dimensions ── */
+  .dims { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .dcard {
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:14px;
+    padding:22px 18px; transition:all .2s; display:flex; gap:14px; align-items:flex-start;
+  }
+  .dcard:hover { border-color:var(--border-3); background:var(--bg-2); }
+  .dcard-icon {
+    width:36px; height:36px; border-radius:10px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(139,92,246,.08); border:1px solid rgba(139,92,246,.12);
+  }
+  .dcard-icon svg { width:18px; height:18px; stroke:var(--accent-2); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .dcard-body { flex:1; min-width:0; }
+  .dcard-name { font-size:14px; font-weight:600; margin-bottom:1px; }
+  .dcard-zh { font-size:10px; color:var(--accent-2); margin-bottom:6px; font-weight:500; }
+  .dcard-desc { font-size:12px; color:var(--text-4); line-height:1.5; }
+
+  /* ── MBTI ── */
+  .mbti-section { max-width:820px; margin:0 auto; }
+  .mbti-hero {
+    display:flex; align-items:center; gap:36px;
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:18px;
+    padding:36px 32px; margin-bottom:20px;
+  }
+  .mbti-letters { display:flex; gap:6px; flex-shrink:0; }
+  .mbti-l {
+    font-size:44px; font-weight:800; line-height:1;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .mbti-l:nth-child(1){background:linear-gradient(135deg,#8b5cf6,#a78bfa);-webkit-background-clip:text;}
+  .mbti-l:nth-child(2){background:linear-gradient(135deg,#3b82f6,#60a5fa);-webkit-background-clip:text;}
+  .mbti-l:nth-child(3){background:linear-gradient(135deg,#22d3ee,#67e8f9);-webkit-background-clip:text;}
+  .mbti-l:nth-child(4){background:linear-gradient(135deg,#22c55e,#4ade80);-webkit-background-clip:text;}
+  .mbti-text h3 { font-size:17px; font-weight:600; margin:0 0 6px; }
+  .mbti-text p { font-size:13px; color:var(--text-3); margin:0; line-height:1.6; }
+  .mbti-axes { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .mbti-ax {
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:12px; padding:16px 18px;
+  }
+  .mbti-ax-head { display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:8px; }
+  .mbti-ax-head .left { color:var(--accent-2); }
+  .mbti-ax-head .right { color:var(--text-5); }
+  .mbti-ax-bar { height:4px; background:var(--bg-3); border-radius:999px; overflow:hidden; margin-bottom:6px; }
+  .mbti-ax-fill { height:100%; border-radius:999px; }
+  .mbti-ax-desc { font-size:11px; color:var(--text-4); line-height:1.45; }
+
+  /* ── Steps ── */
+  .steps { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  .scard {
+    flex:1; min-width:180px; max-width:260px;
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:14px;
+    padding:24px 20px; text-align:center;
+  }
+  .scard-num {
+    width:32px; height:32px; background:linear-gradient(135deg,var(--accent),#7c3aed);
+    color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:13px; margin:0 auto 14px; box-shadow:0 0 16px rgba(139,92,246,.25);
+  }
+  .scard h3 { font-size:14px; font-weight:600; margin:0 0 4px; }
+  .scard p { font-size:12px; color:var(--text-3); margin:0; }
+  .scard code {
+    display:inline-block; background:var(--bg-0); border:1px solid var(--border-2);
+    padding:4px 10px; border-radius:6px; font-size:11px; margin-top:10px;
+    font-family:'SF Mono','Menlo','Consolas',monospace; color:var(--accent-2);
+  }
+
+  /* ── Privacy ── */
+  .pills { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+  .pill {
+    display:flex; align-items:center; gap:6px; padding:8px 16px;
+    background:var(--bg-1); border:1px solid var(--border-1); border-radius:999px;
+    font-size:12px; font-weight:500; color:var(--text-2);
+  }
+  .pill .dot { width:6px; height:6px; background:var(--glow-green); border-radius:999px; box-shadow:0 0 6px rgba(34,197,94,.5); animation:glow 2s ease infinite; }
+
+  /* ── Install ── */
+  .icard {
+    max-width:520px; margin:0 auto; background:var(--bg-1); border:1px solid var(--border-1);
+    border-radius:18px; padding:32px 28px; text-align:center; position:relative; overflow:hidden;
+  }
+  .icard::before {
+    content:""; position:absolute; top:-60%; left:50%; width:360px; height:360px; transform:translateX(-50%);
+    background:radial-gradient(circle,rgba(139,92,246,.06),transparent 60%); pointer-events:none;
+  }
+  .icard pre {
+    background:var(--bg-0); border:1px solid var(--border-2); border-radius:10px;
+    padding:14px 18px; margin:16px 0; font-family:'SF Mono','Menlo','Consolas',monospace;
+    font-size:13px; color:var(--accent-2); text-align:left; position:relative; overflow-x:auto;
+  }
+  .icard .hint { color:var(--text-4); font-size:12px; margin:0; position:relative; }
+
+  /* ── Footer ── */
+  footer { padding:40px 0; border-top:1px solid var(--border-1); text-align:center; color:var(--text-5); font-size:11px; }
+  footer a { color:var(--text-4); text-decoration:none; margin:0 10px; }
+  footer a:hover { color:var(--accent-2); }
+
+  @media(max-width:860px) {
+    .hero { grid-template-columns:1fr; text-align:center; gap:32px; }
+    .hero-sub { margin-left:auto; margin-right:auto; }
+    .hero-cta { justify-content:center; }
+    .dims,.report-cards { grid-template-columns:1fr 1fr; }
+    .mbti-axes { grid-template-columns:1fr; }
+  }
+  @media(max-width:640px) {
+    .wrap { padding:0 20px; }
+    .hero { padding:48px 0 32px; }
+    .hero h1 { font-size:28px; letter-spacing:-1px; }
+    .dims,.report-cards { grid-template-columns:1fr; }
+    .mbti-hero { flex-direction:column; text-align:center; padding:24px 20px; }
+    .pipeline { flex-direction:column; gap:12px; }
+    .pipe-arrow { transform:rotate(90deg); }
+    .steps { flex-direction:column; align-items:center; }
+    section { padding:48px 0; }
+    .nav-r a { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><div class="brand-mark"><svg viewBox="0 0 32 32" width="14" height="14" fill="none"><polygon points="16 3 28 9.5 28 22.5 16 29 4 22.5 4 9.5" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><circle cx="16" cy="16" r="2" fill="#fff"/></svg></div><span class="brand-text">VibeRadar</span></div>
+    <div class="nav-r">
+      <a href="https://github.com/LeifDiao/vibe-radar">GitHub</a>
+      <a href="https://github.com/LeifDiao/vibe-radar/blob/main/docs/METHODOLOGY.md" id="navM" data-en="Methodology" data-zh="方法论">Methodology</a>
+      <button class="lang-btn" id="langToggle">中文</button>
+    </div>
+  </nav>
+
+  <!-- Hero: left text, right radar -->
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-badge" data-en="Claude Code Plugin" data-zh="Claude Code 插件">Claude Code Plugin</div>
+      <h1 data-en="How well do you<br><span class='g'>collaborate with AI?</span>" data-zh="你和 AI 配合得<br><span class='g'>够好吗？</span>">How well do you<br><span class="g">collaborate with AI?</span></h1>
+      <p class="hero-sub" data-en="Review your AI coding habits. VibeRadar reads your Claude Code sessions, scores 6 dimensions of collaboration, spots where you're losing efficiency, and tells you exactly how to improve. 30 seconds, 100% local." data-zh="复盘你的 AI 编程习惯。VibeRadar 分析你的 Claude Code 对话记录，从 6 个维度找出你在哪里浪费了 AI 的能力，告诉你怎么改。30 秒出报告，数据不离开你的电脑。">Review your AI coding habits. VibeRadar reads your Claude Code sessions, scores 6 dimensions of collaboration, spots where you're losing efficiency, and tells you exactly how to improve. 30 seconds, 100% local.</p>
+      <div class="hero-cta">
+        <a href="https://github.com/LeifDiao/vibe-radar" class="btn btn-sm btn-primary" data-en="Get VibeRadar" data-zh="免费使用">Get VibeRadar</a>
+        <a href="https://github.com/LeifDiao/vibe-radar/blob/main/docs/METHODOLOGY.md" class="btn btn-sm btn-ghost" id="ctaM" data-en="How it works" data-zh="评分原理">How it works</a>
+      </div>
+    </div>
+    <div class="hero-radar">
+      <div class="hero-radar-inner">
+        <div class="hero-radar-head">
+          <div class="hero-radar-brand"><svg viewBox="0 0 32 32" width="10" height="10" fill="none"><polygon points="16 3 28 9.5 28 22.5 16 29 4 22.5 4 9.5" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg> VibeRadar</div>
+          <div class="hero-radar-meta" data-en="sample report" data-zh="示例报告">sample report</div>
+        </div>
+        <div class="radar-zone">
+          <svg id="pr" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="rc"><div class="rc-l">A</div><div class="rc-s">72 / 100</div></div>
+        </div>
+        <div class="score-pills" id="spills"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Report: what you get + pipeline -->
+  <section>
+    <div class="stitle" data-en="Your Report" data-zh="你会看到什么">Your Report</div>
+    <div class="sheading">
+      <h2 data-en="Everything in one page" data-zh="一个页面，看清一切">Everything in one page</h2>
+      <p data-en="A single HTML file. No login, no cloud, no subscription. Open it anywhere, even offline." data-zh="一个本地 HTML 文件，不联网也能打开。无需登录，无需注册。">A single HTML file. No login, no cloud, no subscription. Open it anywhere, even offline.</p>
+    </div>
+    <div class="report-cards">
+      <div class="rcard">
+        <div class="rcard-num" style="color:var(--grade-a)">A</div>
+        <h3 data-en="Overall Grade" data-zh="总评等级">Overall Grade</h3>
+        <p data-en="S through D. One letter that tells you where you stand." data-zh="从 S 到 D，一个字母告诉你在什么水平。">S through D. One letter that tells you where you stand.</p>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num" style="color:var(--accent-2)">6</div>
+        <h3 data-en="Dimension Scores" data-zh="六维雷达">Dimension Scores</h3>
+        <p data-en="Each scored 0-100 with evidence. See where you're strong and where to grow." data-zh="每项 0-100 分，附带证据。哪里强、哪里弱，一目了然。">Each scored 0-100 with evidence. See where you're strong and where to grow.</p>
+      </div>
+      <div class="rcard">
+        <div class="rcard-num" style="color:var(--glow-cyan)">3-7</div>
+        <h3 data-en="Action Items" data-zh="可执行建议">Action Items</h3>
+        <p data-en='Specific. Not "test more" — "ask AI to explain before running."' data-zh='不说废话。不是"多测试"，而是"下次让 AI 先解释再跑代码"。'>Specific. Not "test more" — "ask AI to explain before running."</p>
+      </div>
+    </div>
+    <!-- Scoring pipeline -->
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-step-label" data-en="Step 1" data-zh="第 1 步">Step 1</div>
+        <div class="pipe-step-name" data-en="Parse" data-zh="提取">Parse</div>
+        <div class="pipe-step-desc" data-en="Read your session history locally" data-zh="本地读取你的对话记录">Read your session history locally</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-step-label" data-en="Step 2" data-zh="第 2 步">Step 2</div>
+        <div class="pipe-step-name" data-en="Score" data-zh="评分">Score</div>
+        <div class="pipe-step-desc" data-en="Deterministic formula + AI judgment" data-zh="确定性公式 + AI 定性判断">Deterministic formula + AI judgment</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-step-label" data-en="Step 3" data-zh="第 3 步">Step 3</div>
+        <div class="pipe-step-name" data-en="Report" data-zh="报告">Report</div>
+        <div class="pipe-step-desc" data-en="Beautiful single-file HTML report" data-zh="精美的单文件 HTML 报告">Beautiful single-file HTML report</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 Dimensions with SVG icons -->
+  <section>
+    <div class="stitle" data-en="6 Dimensions" data-zh="六项能力">6 Dimensions</div>
+    <div class="sheading">
+      <h2 data-en="Measured, not guessed" data-zh="每一分都有据可查">Measured, not guessed</h2>
+      <p data-en="Every score traces back to specific signals in your conversation history. No black box, no vibes." data-zh="所有评分来自你对话记录中的真实信号，不是 AI 的"感觉"。">Every score traces back to specific signals in your conversation history. No black box, no vibes.</p>
+    </div>
+    <div class="dims">
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Lock-On" data-zh="瞄准力">Lock-On</div>
+          <div class="dcard-zh" data-en="Intent Clarity" data-zh="Lock-On">瞄准力</div>
+          <div class="dcard-desc" data-en="How precisely you express what you want — goals, constraints, expected outcomes." data-zh="你的需求说得有多清楚 — 目标明不明确、约束给没给、期望结果有没有说。">How precisely you express what you want — goals, constraints, expected outcomes.</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Scene Setting" data-zh="画面感">Scene Setting</div>
+          <div class="dcard-zh" data-en="Context Quality" data-zh="Scene Setting">画面感</div>
+          <div class="dcard-desc" data-en="How much context you give AI upfront — tech stack, file paths, project structure." data-zh="你有没有在一开始就把背景交代清楚 — 技术栈、文件路径、项目结构。">How much context you give AI upfront — tech stack, file paths, project structure.</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Unpack" data-zh="拆弹术">Unpack</div>
+          <div class="dcard-zh" data-en="Task Decomposition" data-zh="Unpack">拆弹术</div>
+          <div class="dcard-desc" data-en="Do you break complex tasks into focused steps, or throw everything at AI at once?" data-zh="复杂任务是拆成一步步来，还是一句话全丢给 AI？">Do you break complex tasks into focused steps, or throw everything at AI at once?</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 15 14"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Steering" data-zh="导航力">Steering</div>
+          <div class="dcard-zh" data-en="Course Correction" data-zh="Steering">导航力</div>
+          <div class="dcard-desc" data-en="When AI goes off-track, can you pull it back with specifics — not just 'that's wrong'?" data-zh="AI 跑偏了，你能精准拉回来吗？还是只会说"不对，重来"？">When AI goes off-track, can you pull it back with specifics — not just "that's wrong"?</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Proof Check" data-zh="鉴定术">Proof Check</div>
+          <div class="dcard-zh" data-en="Output Verification" data-zh="Proof Check">鉴定术</div>
+          <div class="dcard-desc" data-en="Do you verify AI output before trusting it, or just say 'looks good' and move on?" data-zh="你会审查 AI 的产出吗？还是看都不看直接说"可以，继续"？">Do you verify AI output before trusting it, or just say "looks good" and move on?</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-icon"><svg viewBox="0 0 24 24"><polyline points="4 17 10 11 14 15 20 9"/><line x1="14" y1="9" x2="20" y2="9"/><line x1="20" y1="9" x2="20" y2="15"/></svg></div>
+        <div class="dcard-body">
+          <div class="dcard-name" data-en="Tempo" data-zh="节奏感">Tempo</div>
+          <div class="dcard-zh" data-en="Session Flow" data-zh="Tempo">节奏感</div>
+          <div class="dcard-desc" data-en="Do you keep sessions focused with milestones and recaps, or let them wander?" data-zh="对话有节奏感吗 — 有总结、有里程碑 — 还是聊到哪算哪？">Do you keep sessions focused with milestones and recaps, or let them wander?</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MBTI with axes explanation -->
+  <section>
+    <div class="stitle" data-en="Bonus" data-zh="额外收获">Bonus</div>
+    <div class="sheading">
+      <h2 data-en="Your collaboration personality" data-zh="你的 AI 协作人格">Your collaboration personality</h2>
+      <p data-en="16 archetypes based on how you actually behave in sessions — not what you say, but what you do." data-zh="16 种类型，不看你说了什么词，看你在对话中实际怎么做。">16 archetypes based on how you actually behave in sessions — not what you say, but what you do.</p>
+    </div>
+    <div class="mbti-section">
+      <div class="mbti-hero">
+        <div class="mbti-letters"><span class="mbti-l">I</span><span class="mbti-l">N</span><span class="mbti-l">T</span><span class="mbti-l">J</span></div>
+        <div class="mbti-text">
+          <h3 data-en="Architect" data-zh="架构师">Architect</h3>
+          <p data-en="Design first, code later. Precise instructions, systematic thinking. One of 16 archetypes derived from your real session behavior." data-zh="先想清楚再动手，指令精准，善于系统性思考。你的类型由真实对话行为决定。">Design first, code later. Precise instructions, systematic thinking. One of 16 archetypes derived from your real session behavior.</p>
+        </div>
+      </div>
+      <div class="mbti-axes">
+        <div class="mbti-ax">
+          <div class="mbti-ax-head"><span class="left">E</span><span class="right">I</span></div>
+          <div class="mbti-ax-bar"><div class="mbti-ax-fill" style="width:28%;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></div></div>
+          <div class="mbti-ax-desc" data-en="Do you think out loud in messages (E) or deliver concise directives (I)?" data-zh="你在消息里边想边说 (E)，还是只给精准指令 (I)？">Do you think out loud in messages (E) or deliver concise directives (I)?</div>
+        </div>
+        <div class="mbti-ax">
+          <div class="mbti-ax-head"><span class="left">S</span><span class="right">N</span></div>
+          <div class="mbti-ax-bar"><div class="mbti-ax-fill" style="width:65%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></div></div>
+          <div class="mbti-ax-desc" data-en="Do you reference specific files and code (S) or discuss architecture and design (N)?" data-zh="你更多引用具体文件和代码 (S)，还是讨论架构和设计 (N)？">Do you reference specific files and code (S) or discuss architecture and design (N)?</div>
+        </div>
+        <div class="mbti-ax">
+          <div class="mbti-ax-head"><span class="left">T</span><span class="right">F</span></div>
+          <div class="mbti-ax-bar"><div class="mbti-ax-fill" style="width:80%;background:linear-gradient(90deg,#22d3ee,#67e8f9)"></div></div>
+          <div class="mbti-ax-desc" data-en="When correcting AI, do you prioritize correctness (T) or readability and UX (F)?" data-zh="纠正 AI 时，你更在意正确性 (T) 还是可读性和体验 (F)？">When correcting AI, do you prioritize correctness (T) or readability and UX (F)?</div>
+        </div>
+        <div class="mbti-ax">
+          <div class="mbti-ax-head"><span class="left">J</span><span class="right">P</span></div>
+          <div class="mbti-ax-bar"><div class="mbti-ax-fill" style="width:68%;background:linear-gradient(90deg,#22c55e,#4ade80)"></div></div>
+          <div class="mbti-ax-desc" data-en="Do your sessions follow a planned arc (J) or shift directions freely (P)?" data-zh="你的对话是按计划推进 (J)，还是随时探索新方向 (P)？">Do your sessions follow a planned arc (J) or shift directions freely (P)?</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Steps -->
+  <section>
+    <div class="stitle" data-en="Get Started" data-zh="马上试试">Get Started</div>
+    <div class="sheading">
+      <h2 data-en="30 seconds to your score" data-zh="30 秒，看到你的分数">30 seconds to your score</h2>
+    </div>
+    <div class="steps">
+      <div class="scard"><div class="scard-num">1</div><h3 data-en="Install" data-zh="安装">Install</h3><p data-en="One command" data-zh="一条命令搞定">One command</p><code>git clone</code></div>
+      <div class="scard"><div class="scard-num">2</div><h3 data-en="Analyze" data-zh="分析">Analyze</h3><p data-en="Pick a project" data-zh="选一个项目就行">Pick a project</p><code>/vibe-radar</code></div>
+      <div class="scard"><div class="scard-num">3</div><h3 data-en="Done" data-zh="完成">Done</h3><p data-en="Report opens automatically" data-zh="报告自动在浏览器打开">Report opens automatically</p><code data-en="single-file HTML" data-zh="单文件 HTML">single-file HTML</code></div>
+    </div>
+  </section>
+
+  <!-- Privacy -->
+  <section>
+    <div class="sheading">
+      <h2 data-en="100% on your machine" data-zh="你的数据，只在你的电脑上">100% on your machine</h2>
+      <p data-en="Your session data never leaves your computer. Ever." data-zh="对话记录不上传、不外传、不经过任何服务器。">Your session data never leaves your computer. Ever.</p>
+    </div>
+    <div class="pills">
+      <div class="pill"><span class="dot"></span><span data-en="No cloud" data-zh="不上云">No cloud</span></div>
+      <div class="pill"><span class="dot"></span><span data-en="No API key" data-zh="不要密钥">No API key</span></div>
+      <div class="pill"><span class="dot"></span><span data-en="No telemetry" data-zh="不采集">No telemetry</span></div>
+      <div class="pill"><span class="dot"></span><span data-en="No tracking" data-zh="不追踪">No tracking</span></div>
+      <div class="pill"><span class="dot"></span>&lt;200 KB</div>
+    </div>
+  </section>
+
+
+  <footer>
+    <div>
+      <a href="https://github.com/LeifDiao/vibe-radar">GitHub</a>
+      <a href="https://github.com/LeifDiao/vibe-radar/blob/main/docs/METHODOLOGY.md" id="footM" data-en="Methodology" data-zh="方法论">Methodology</a>
+    </div>
+    <div style="margin-top:14px;color:var(--text-5);font-style:italic;font-size:12px;" data-en="Built for people who want leverage, not AI theater." data-zh="给想把 AI 真正用成杠杆的人。">Built for people who want leverage, not AI theater.</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const D=[
+    {name:'Lock-On',zh:'瞄准力',score:78,color:'#3b82f6'},
+    {name:'Scene Setting',zh:'画面感',score:85,color:'#22c55e'},
+    {name:'Unpack',zh:'拆弹术',score:62,color:'#eab308'},
+    {name:'Steering',zh:'导航力',score:74,color:'#3b82f6'},
+    {name:'Proof Check',zh:'鉴定术',score:48,color:'#f97316'},
+    {name:'Tempo',zh:'节奏感',score:71,color:'#3b82f6'}
+  ];
+  const svg=document.getElementById('pr'),NS='http://www.w3.org/2000/svg';
+  const cx=180,cy=180,R=115,n=6;
+  function pt(a,r){return[cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+  for(let k=1;k<=5;k++){const r=R*k/5,pts=[];for(let i=0;i<n;i++){const a=Math.PI*2*i/n-Math.PI/2;pts.push(pt(a,r).join(','));}const p=document.createElementNS(NS,'polygon');p.setAttribute('points',pts.join(' '));p.setAttribute('class','gh');svg.appendChild(p);}
+  const labels=[];
+  for(let i=0;i<n;i++){const a=Math.PI*2*i/n-Math.PI/2,[ex,ey]=pt(a,R);const l=document.createElementNS(NS,'line');l.setAttribute('x1',cx);l.setAttribute('y1',cy);l.setAttribute('x2',ex);l.setAttribute('y2',ey);l.setAttribute('class','sp');svg.appendChild(l);const[lx,ly]=pt(a,R+22);const t=document.createElementNS(NS,'text');t.setAttribute('x',lx);t.setAttribute('y',ly);t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');t.setAttribute('class','lb');t.textContent=D[i].zh;svg.appendChild(t);labels.push(t);const s=document.createElementNS(NS,'text');s.setAttribute('x',lx);s.setAttribute('y',ly+13);s.setAttribute('text-anchor','middle');s.setAttribute('class','sc');s.textContent=D[i].score;svg.appendChild(s);}
+  const dp=D.map((d,i)=>{const a=Math.PI*2*i/n-Math.PI/2;return pt(a,R*d.score/100).join(',');}).join(' ');const po=document.createElementNS(NS,'polygon');po.setAttribute('points',dp);po.setAttribute('class','dp');svg.appendChild(po);
+  D.forEach((d,i)=>{const a=Math.PI*2*i/n-Math.PI/2,[x,y]=pt(a,R*d.score/100);const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',3);c.setAttribute('class','dd');svg.appendChild(c);});
+
+  const spills=document.getElementById('spills');
+  function renderPills(lang){
+    spills.innerHTML='';
+    D.forEach(d=>{
+      const lb=lang==='zh'?d.zh:d.name;
+      const el=document.createElement('div');
+      el.className='sp-item';
+      el.innerHTML=
+        '<div class="sp-score" style="color:'+d.color+'">'+d.score+'</div>'+
+        '<div class="sp-info"><div class="sp-name">'+lb+'</div>'+
+        '<div class="sp-bar"><div class="sp-fill" style="width:'+d.score+'%;background:'+d.color+'"></div></div></div>';
+      spills.appendChild(el);
+    });
+  }
+
+  const isZh=/^zh/i.test(navigator.language||'');
+  let lang=isZh?'zh':'en';
+  function apply(){
+    document.querySelectorAll('[data-en]').forEach(el=>{const v=el.dataset[lang]||el.dataset.en;if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.placeholder=v;else el.innerHTML=v;});
+    labels.forEach((l,i)=>{l.textContent=lang==='zh'?D[i].zh:D[i].name;});
+    renderPills(lang);
+    const base='https://github.com/LeifDiao/vibe-radar/blob/main/docs/';
+    const f=lang==='zh'?'METHODOLOGY_zh.md':'METHODOLOGY.md';
+    ['navM','ctaM','footM'].forEach(id=>{const el=document.getElementById(id);if(el&&el.href)el.href=base+f;});
+    document.getElementById('langToggle').textContent=lang==='zh'?'EN':'中文';
+  }
+  document.getElementById('langToggle').addEventListener('click',()=>{lang=lang==='zh'?'en':'zh';apply();});
+  apply();
+})();
+</script>
+</body>
+</html>
