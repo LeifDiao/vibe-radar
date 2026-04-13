@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VibeRadar · Collaboration Style Report</title>
+<style>
+  :root {
+    --bg-0: #f7f7fb;
+    --bg-1: #ffffff;
+    --bg-2: #f0f0f6;
+    --bg-3: #e4e4ec;
+    --text-1: #111118;
+    --text-2: #3a3a48;
+    --text-3: #6a6a7e;
+    --text-4: #9090a5;
+    --text-5: #b5b5c5;
+    --border-1: rgba(0, 0, 0, 0.05);
+    --border-2: rgba(0, 0, 0, 0.08);
+    --border-3: rgba(0, 0, 0, 0.15);
+    --accent: #8b5cf6;
+    --accent-2: #a78bfa;
+    --accent-3: #c4b5fd;
+    --glow-purple: #8b5cf6;
+    --glow-blue: #60a5fa;
+    --glow-cyan: #22d3ee;
+    --grade-s: #22c55e;
+    --grade-a: #3b82f6;
+    --grade-b: #eab308;
+    --grade-c: #f97316;
+    --grade-d: #ef4444;
+    --radar-grid: rgba(139, 92, 246, 0.18);
+    --radar-spoke: rgba(0, 0, 0, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-0: #06060b; --bg-1: #0e0e16; --bg-2: #16161f; --bg-3: #1e1e2a;
+      --text-1: #f3f4f6; --text-2: #d1d5db; --text-3: #9ca3af; --text-4: #6b7280; --text-5: #4b5563;
+      --border-1: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.08); --border-3: rgba(255,255,255,0.12);
+      --radar-spoke: rgba(255,255,255,0.06);
+    }
+  }
+  [data-theme="dark"] {
+    --bg-0: #06060b; --bg-1: #0e0e16; --bg-2: #16161f; --bg-3: #1e1e2a;
+    --text-1: #f3f4f6; --text-2: #d1d5db; --text-3: #9ca3af; --text-4: #6b7280; --text-5: #4b5563;
+    --border-1: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.08); --border-3: rgba(255,255,255,0.12);
+    --radar-spoke: rgba(255,255,255,0.06);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at top, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(96, 165, 250, 0.05) 0%, transparent 50%),
+      var(--bg-0);
+    color: var(--text-1);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* ===== Header ===== */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--glow-blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+
+  .logo-text {
+    background: linear-gradient(135deg, var(--text-1), var(--text-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lang-toggle {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .lang-toggle:hover {
+    background: var(--bg-2);
+    border-color: var(--border-3);
+    color: var(--text-1);
+    transform: translateY(-1px);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .icon-toggle {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+  .icon-toggle:hover {
+    background: var(--bg-2);
+    border-color: var(--border-3);
+    color: var(--text-1);
+    transform: translateY(-1px);
+  }
+
+  .share-btn {
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border: none;
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+    box-shadow: 0 0 12px rgba(139,92,246,0.2);
+  }
+  .share-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(139,92,246,0.4);
+  }
+
+  /* ===== Meta ===== */
+  .meta {
+    color: var(--text-4);
+    font-size: 12px;
+    margin-bottom: 20px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* ===== Hero Credential ===== */
+  .hero-credential {
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+    isolation: isolate;
+    margin-bottom: 56px;
+  }
+  .hero-credential::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 28px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.5), rgba(96,165,250,0.3), rgba(34,211,238,0.25), rgba(139,92,246,0.5));
+    background-size: 300% 300%;
+    animation: holo-shift 6s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+  }
+  @keyframes holo-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .hero-credential-inner {
+    background:
+      radial-gradient(ellipse at 15% 30%, rgba(139,92,246,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 60%, rgba(96,165,250,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(34,211,238,0.03) 0%, transparent 40%),
+      linear-gradient(170deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border-radius: 28px;
+    position: relative;
+    overflow: hidden;
+    padding: 56px 48px 40px;
+  }
+
+  /* Brand + meta bar */
+  .hero-credential-brand {
+    position: absolute;
+    top: 20px;
+    left: 28px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-5);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hero-credential-brand svg {
+    color: var(--accent-2);
+  }
+  .hero-credential-meta {
+    position: absolute;
+    top: 20px;
+    right: 28px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-5);
+    z-index: 1;
+  }
+
+  /* Main two-column area */
+  .hero-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  /* Left: insight only */
+  .hero-left {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .insight-label {
+    font-size: 10px;
+    color: var(--text-5);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .insight {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--text-1);
+    margin: 0 0 24px;
+    letter-spacing: -0.3px;
+  }
+  .session-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-5);
+    padding: 3px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-1);
+    border-radius: 6px;
+    align-self: flex-start;
+  }
+
+  /* Right: radar with grade + label in center */
+  .hero-right {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .radar-zone {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .radar-center-grade {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .radar-center-letter {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    filter: drop-shadow(0 0 30px currentColor);
+  }
+  .radar-center-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-top: 6px;
+  }
+  .radar-center-score {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-4);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ===== Section titles ===== */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-3);
+    margin-bottom: 20px;
+  }
+  .section-title::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  section {
+    margin-bottom: 56px;
+  }
+
+  /* ===== Credential Card Base (MBTI) ===== */
+  .credential {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .credential::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.5), rgba(96,165,250,0.3), rgba(34,211,238,0.3), rgba(139,92,246,0.5));
+    background-size: 300% 300%;
+    animation: holo-shift 6s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .credential-inner {
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(96,165,250,0.04) 0%, transparent 50%),
+      linear-gradient(170deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .credential-brand {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-5);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .credential-brand svg {
+    color: var(--accent-2);
+    flex-shrink: 0;
+  }
+
+  .credential-meta {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-5);
+    z-index: 1;
+    text-align: right;
+    letter-spacing: 0.3px;
+  }
+
+  /* ===== Radar ===== */
+
+  #radar {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+  }
+
+  #radar .grid-hex {
+    fill: none;
+    stroke: var(--radar-grid);
+    stroke-width: 0.8;
+  }
+  #radar .spoke {
+    stroke: var(--radar-spoke);
+    stroke-width: 0.8;
+  }
+  #radar .axis-label {
+    fill: var(--text-3);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  #radar .axis-score {
+    fill: var(--text-4);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  #radar .data-poly {
+    fill: rgba(139, 92, 246, 0.15);
+    stroke: var(--accent-2);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.5));
+    animation: radar-pulse 3s ease-in-out infinite;
+  }
+  @keyframes radar-pulse {
+    0%, 100% { filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.5)); }
+    50% { filter: drop-shadow(0 0 24px rgba(139, 92, 246, 0.7)); }
+  }
+  #radar .data-dot {
+    fill: var(--accent-2);
+    stroke: var(--bg-0);
+    stroke-width: 2;
+  }
+
+  .card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 16px;
+    padding: 28px;
+    transition: border-color 0.2s ease;
+  }
+  .card:hover {
+    border-color: var(--border-3);
+  }
+
+  /* ===== Score bars (inline in radar credential) ===== */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .grade-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .score-row-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .score-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .score-row-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+
+  .score-row-value {
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--bg-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ===== Dimension detail cards ===== */
+  .dimensions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .dim-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.2s ease;
+  }
+  .dim-card:hover {
+    border-color: var(--border-3);
+    background: var(--bg-2);
+  }
+
+  .dim-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .dim-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dim-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 2px;
+  }
+
+  .dim-description {
+    font-size: 12px;
+    color: var(--text-4);
+    line-height: 1.5;
+  }
+
+  .dim-score {
+    font-size: 32px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .dim-bar {
+    margin-bottom: 14px;
+  }
+
+  .dim-reasoning {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .dim-evidence {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-4);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .dim-evidence li {
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .dim-evidence li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--accent-2);
+    opacity: 0.7;
+  }
+
+  /* ===== MBTI Credential ===== */
+  .mbti-credential .credential-inner {
+    padding: 56px 40px 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .mbti-credential .credential-inner::after {
+    content: "";
+    position: absolute;
+    top: -40%;
+    right: -15%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 60%);
+    pointer-events: none;
+  }
+
+  .mbti-text-zone {
+    position: relative;
+    z-index: 1;
+  }
+
+  .mbti-type-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mbti-letter {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 20px var(--letter-glow));
+    transition: transform 0.3s ease;
+  }
+  .mbti-letter:hover {
+    transform: translateY(-4px) scale(1.05);
+  }
+  .mbti-letter[data-axis="ei"] {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    -webkit-background-clip: text;
+    --letter-glow: rgba(139, 92, 246, 0.4);
+  }
+  .mbti-letter[data-axis="sn"] {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    -webkit-background-clip: text;
+    --letter-glow: rgba(59, 130, 246, 0.4);
+  }
+  .mbti-letter[data-axis="tf"] {
+    background: linear-gradient(135deg, #22d3ee, #67e8f9);
+    -webkit-background-clip: text;
+    --letter-glow: rgba(34, 211, 238, 0.4);
+  }
+  .mbti-letter[data-axis="jp"] {
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    -webkit-background-clip: text;
+    --letter-glow: rgba(34, 197, 94, 0.4);
+  }
+
+  .mbti-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+  }
+
+  .mbti-description {
+    font-size: 14px;
+    color: var(--text-3);
+    line-height: 1.65;
+    max-width: 480px;
+    margin-bottom: 16px;
+  }
+
+  .mbti-explainer {
+    font-size: 12px;
+    color: var(--text-4);
+    line-height: 1.5;
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border-radius: 10px;
+    max-width: 420px;
+  }
+
+  /* Right: axis scores */
+  .mbti-scores-zone {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 280px;
+  }
+
+  .mbti-axis {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .axis-pole {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-5);
+  }
+  .axis-pole.lean-active {
+    color: var(--accent-2);
+    font-weight: 800;
+  }
+  .axis-pole:last-child {
+    text-align: right;
+  }
+
+  .axis-track {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .axis-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .mbti-axis:nth-child(1) .axis-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .mbti-axis:nth-child(2) .axis-fill { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .mbti-axis:nth-child(3) .axis-fill { background: linear-gradient(90deg, #22d3ee, #67e8f9); }
+  .mbti-axis:nth-child(4) .axis-fill { background: linear-gradient(90deg, #22c55e, #4ade80); }
+
+  @media (max-width: 860px) {
+    .mbti-credential .credential-inner {
+      grid-template-columns: 1fr;
+      text-align: center;
+      padding: 56px 28px 36px;
+    }
+    .mbti-type-row { justify-content: center; }
+    .mbti-description { margin-left: auto; margin-right: auto; }
+    .mbti-scores-zone { min-width: auto; margin: 0 auto; max-width: 360px; }
+    .mbti-explainer { margin-left: auto; margin-right: auto; }
+  }
+
+  /* ===== Suggestions ===== */
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .suggestion {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 14px;
+    transition: all 0.2s ease;
+  }
+  .suggestion:hover {
+    border-color: var(--border-3);
+    background: var(--bg-2);
+  }
+
+  .suggestion-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .priority-high .suggestion-icon { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .priority-medium .suggestion-icon { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+  .priority-low .suggestion-icon { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+
+  .suggestion-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .suggestion-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+
+  .suggestion-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .dim-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--bg-3);
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .suggestion-text {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+
+  /* ===== Footer ===== */
+  footer {
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-1);
+    color: var(--text-5);
+    font-size: 11px;
+    text-align: center;
+    letter-spacing: 0.4px;
+  }
+
+  @media (max-width: 680px) {
+    .container { padding: 32px 20px 60px; }
+    .hero-credential-inner { padding: 48px 24px 28px; }
+    .hero-columns {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .hero-left { text-align: center; }
+    .insight { font-size: 18px; }
+    .radar-center-letter { font-size: 44px; }
+    .mbti-letter { font-size: 48px; }
+    .dim-card { padding: 20px; }
+    .dim-score { font-size: 28px; }
+  }
+
+  @media (max-width: 520px) {
+    #radar .axis-label { font-size: 10px; }
+    #radar .axis-score { font-size: 9px; }
+    .mbti-letter { font-size: 40px; }
+    .credential-brand { font-size: 10px; }
+  }
+
+  @media print {
+    .share-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-mark"><svg viewBox="0 0 32 32" width="16" height="16" fill="none"><polygon points="16 3 28 9.5 28 22.5 16 29 4 22.5 4 9.5" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><circle cx="16" cy="16" r="2" fill="#fff"/></svg></div>
+      <div class="logo-text">VibeRadar</div>
+    </div>
+    <div class="header-actions">
+      <button class="lang-toggle" id="langToggle">EN</button>
+      <button class="icon-toggle" id="themeToggle" title="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="share-btn" id="shareBtn">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+    </div>
+  </header>
+
+  <div class="meta" id="meta"></div>
+
+  <!-- Hero credential -->
+  <div class="hero-credential">
+    <div class="hero-credential-inner">
+      <div class="hero-credential-brand"><svg viewBox="0 0 32 32" width="12" height="12" fill="none"><polygon points="16 3 28 9.5 28 22.5 16 29 4 22.5 4 9.5" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg> VibeRadar</div>
+      <div class="hero-credential-meta" id="heroMeta"></div>
+      <div class="hero-columns">
+        <div class="hero-left">
+          <div class="insight-label" id="insightLabel"></div>
+          <p class="insight" id="insight"></p>
+          <span class="session-stat" id="sessionStat"></span>
+        </div>
+        <div class="hero-right">
+          <div class="radar-zone">
+            <svg id="radar" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"></svg>
+            <div class="radar-center-grade">
+              <div class="radar-center-letter" id="gradeLarge"></div>
+              <div class="radar-center-label" id="gradeLabel"></div>
+              <div class="radar-center-score" id="gradeScore"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dimension details -->
+  <section>
+    <div class="section-title" data-en="DIMENSION BREAKDOWN" data-zh="维度详解">维度详解</div>
+    <div class="dimensions-grid" id="dimensionsGrid"></div>
+  </section>
+
+  <!-- Suggestions -->
+  <section>
+    <div class="section-title" data-en="IMPROVEMENT INSIGHTS" data-zh="改进建议">改进建议</div>
+    <div class="suggestions" id="suggestions"></div>
+  </section>
+
+  <!-- MBTI section (last) -->
+  <section>
+    <div class="section-title" id="mbtiSectionTitle"></div>
+    <div class="credential mbti-credential">
+      <div class="credential-inner">
+        <div class="credential-brand"><svg viewBox="0 0 32 32" width="12" height="12" fill="none"><polygon points="16 3 28 9.5 28 22.5 16 29 4 22.5 4 9.5" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg> VibeRadar</div>
+        <div class="credential-meta" id="mbtiMeta"></div>
+        <div class="mbti-text-zone">
+          <div class="mbti-type-row" id="mbtiTypeRow"></div>
+          <div class="mbti-title" id="mbtiTitle"></div>
+          <div class="mbti-description" id="mbtiDesc"></div>
+          <div class="mbti-explainer" id="mbtiExplainer"></div>
+        </div>
+        <div class="mbti-scores-zone" id="mbtiAxes"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script id="report-data" type="application/json">{{REPORT_DATA}}</script>
+
+<script>
+(function() {
+  const GRADE_COLORS = {
+    S: '#22c55e',
+    A: '#3b82f6',
+    B: '#eab308',
+    C: '#f97316',
+    D: '#ef4444'
+  };
+
+  const GRADE_BG = {
+    S: 'rgba(34, 197, 94, 0.12)',
+    A: 'rgba(59, 130, 246, 0.12)',
+    B: 'rgba(234, 179, 8, 0.12)',
+    C: 'rgba(249, 115, 22, 0.12)',
+    D: 'rgba(239, 68, 68, 0.12)'
+  };
+
+  const I18N = {
+    project: { en: 'Project', zh: '项目' },
+    sessions: { en: 'sessions analyzed', zh: '个 session 已分析' },
+    overview: { en: 'OVERVIEW', zh: '总览' },
+    dimensions: { en: 'DIMENSION BREAKDOWN', zh: '维度详解' },
+    personality: { en: 'COLLABORATION PERSONALITY', zh: '协作人格' },
+    suggestions: { en: 'IMPROVEMENT INSIGHTS', zh: '改进建议' },
+    insightLabel: { en: 'CORE INSIGHT', zh: '核心洞察' },
+    overallScore: { en: 'Overall', zh: '总分' },
+    footer: {
+      en: 'VibeRadar — Decode your AI collaboration style',
+      zh: 'VibeRadar — 解码你的 AI 协作风格'
+    },
+    priorityIcons: { high: '!', medium: '!', low: 'i' }
+  };
+
+  function gradeFromScore(score) {
+    if (score >= 85) return 'S';
+    if (score >= 70) return 'A';
+    if (score >= 55) return 'B';
+    if (score >= 40) return 'C';
+    return 'D';
+  }
+
+  function getPriorityIcon(priority) {
+    if (priority === 'high') {
+      return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>';
+    }
+    if (priority === 'medium') {
+      return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg>';
+  }
+
+  // ===== Theme: detect OS preference, allow manual toggle =====
+  function getPreferredTheme() {
+    const stored = localStorage.getItem('viberadar-theme');
+    if (stored) return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'dark') {
+      icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    } else {
+      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    }
+  }
+  let currentTheme = getPreferredTheme();
+  applyTheme(currentTheme);
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+    localStorage.setItem('viberadar-theme', currentTheme);
+  });
+
+  const raw = document.getElementById('report-data').textContent;
+  let report;
+  try {
+    report = JSON.parse(raw);
+  } catch (e) {
+    document.body.innerHTML = '<div style="padding:40px;font-family:monospace;color:#f3f4f6;background:#06060b;min-height:100vh">Failed to parse report data: ' + e.message + '</div>';
+    return;
+  }
+
+  let lang = report.language || 'zh';
+
+  function t(field) {
+    if (field == null) return '';
+    if (typeof field === 'string') return field;
+    if (typeof field === 'object') return field[lang] || field.en || field.zh || '';
+    return String(field);
+  }
+
+  function tc(key) {
+    return (I18N[key] && I18N[key][lang]) || (I18N[key] && I18N[key].en) || '';
+  }
+
+  function formatDate(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch { return iso; }
+  }
+
+  function render() {
+    document.documentElement.lang = lang;
+
+    // Meta
+    document.getElementById('meta').textContent =
+      tc('project') + ' · ' + report.project + ' · ' + formatDate(report.generatedAt);
+
+    // Section titles (data-attr driven)
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const v = el.dataset[lang] || el.dataset.en;
+      el.childNodes.forEach(n => {
+        if (n.nodeType === 3) n.textContent = '';
+      });
+      el.appendChild(document.createTextNode(v));
+    });
+
+    // Session count
+    const sessions = report.sessionCount || (report.stats && report.stats.validSessions) || 0;
+
+    // Overall grade
+    const overallGrade = report.overallGrade || gradeFromScore(report.overallScore || 0);
+    const gradeDescs = {
+      S: { en: 'In The Zone', zh: '心流共振' },
+      A: { en: 'Synced Up', zh: '默契搭档' },
+      B: { en: 'Finding Groove', zh: '稳步探索' },
+      C: { en: 'Freestyling', zh: '随性对话' },
+      D: { en: 'Day One', zh: '初识旅程' }
+    };
+
+    // Hero: left (insight)
+    document.getElementById('insightLabel').textContent = tc('insightLabel');
+    document.getElementById('insight').textContent = t(report.insight);
+    document.getElementById('sessionStat').textContent = sessions + ' ' + tc('sessions');
+    document.getElementById('heroMeta').textContent =
+      report.project + ' · ' + sessions + ' sessions';
+
+    // Hero: right (radar + center grade/label/score)
+    drawRadar(report.dimensions);
+    const gradeLargeEl = document.getElementById('gradeLarge');
+    gradeLargeEl.textContent = overallGrade;
+    gradeLargeEl.style.color = GRADE_COLORS[overallGrade];
+    document.getElementById('gradeLabel').textContent = gradeDescs[overallGrade][lang] || gradeDescs[overallGrade].en;
+    document.getElementById('gradeScore').textContent = (report.overallScore || 0) + ' / 100';
+
+    // Dimension detail cards
+    const dGrid = document.getElementById('dimensionsGrid');
+    dGrid.innerHTML = '';
+    report.dimensions.forEach(d => {
+      const grade = d.grade || gradeFromScore(d.score);
+      const color = GRADE_COLORS[grade];
+      const bgColor = GRADE_BG[grade];
+      const card = document.createElement('div');
+      card.className = 'dim-card';
+      const evidence = Array.isArray(d.evidence) ? d.evidence : [];
+      card.innerHTML =
+        '<div class="dim-head">' +
+          '<div class="grade-badge"></div>' +
+          '<div class="dim-meta">' +
+            '<div class="dim-name"></div>' +
+            '<div class="dim-description"></div>' +
+          '</div>' +
+          '<div class="dim-score"></div>' +
+        '</div>' +
+        '<div class="dim-bar"><div class="progress-track"><div class="progress-fill"></div></div></div>' +
+        '<div class="dim-reasoning"></div>' +
+        '<ul class="dim-evidence"></ul>';
+      const badge = card.querySelector('.grade-badge');
+      badge.textContent = grade;
+      badge.style.background = bgColor;
+      badge.style.color = color;
+      card.querySelector('.dim-name').textContent = t(d.name);
+      card.querySelector('.dim-description').textContent = t(d.description || '');
+      const scoreEl = card.querySelector('.dim-score');
+      scoreEl.textContent = d.score;
+      scoreEl.style.color = color;
+      const fill = card.querySelector('.progress-fill');
+      fill.style.width = Math.max(0, Math.min(100, d.score)) + '%';
+      fill.style.background = color;
+      card.querySelector('.dim-reasoning').textContent = t(d.reasoning);
+      const ul = card.querySelector('.dim-evidence');
+      evidence.forEach(e => {
+        const li = document.createElement('li');
+        li.textContent = typeof e === 'string' ? e : t(e);
+        ul.appendChild(li);
+      });
+      dGrid.appendChild(card);
+    });
+
+    // MBTI section
+    const I18N_MBTI = {
+      sectionTitle: { en: 'COLLABORATION PERSONALITY', zh: '协作人格' },
+      explainer: {
+        en: 'Based on behavioral analysis of your session patterns — how you think, reference, decide, and organize — not keyword matching.',
+        zh: '基于你的对话行为模式分析 — 思维方式、引用习惯、决策偏好、组织风格 — 而非关键词匹配。'
+      }
+    };
+    document.getElementById('mbtiSectionTitle').textContent = I18N_MBTI.sectionTitle[lang] || I18N_MBTI.sectionTitle.en;
+
+    const mbtiType = report.mbti.type || 'INTJ';
+    const typeRow = document.getElementById('mbtiTypeRow');
+    typeRow.innerHTML = '';
+    const axisKeys = ['ei', 'sn', 'tf', 'jp'];
+    mbtiType.split('').forEach((letter, i) => {
+      const span = document.createElement('span');
+      span.className = 'mbti-letter';
+      span.dataset.axis = axisKeys[i];
+      span.textContent = letter;
+      typeRow.appendChild(span);
+    });
+
+    document.getElementById('mbtiTitle').textContent = t(report.mbti.title || '');
+    document.getElementById('mbtiDesc').textContent = t(report.mbti.description || '');
+    document.getElementById('mbtiExplainer').textContent = I18N_MBTI.explainer[lang] || I18N_MBTI.explainer.en;
+    document.getElementById('mbtiMeta').textContent = gradeDescs[overallGrade][lang] + ' · ' + overallGrade;
+
+    const axesDiv = document.getElementById('mbtiAxes');
+    axesDiv.innerHTML = '';
+    const axisDefs = [
+      { key: 'ei', left: 'E', right: 'I', leftLabel: { en: 'E Extrovert', zh: 'E 外向' }, rightLabel: { en: 'I Introvert', zh: 'I 内向' } },
+      { key: 'sn', left: 'S', right: 'N', leftLabel: { en: 'S Concrete', zh: 'S 具象' }, rightLabel: { en: 'N Intuitive', zh: 'N 直觉' } },
+      { key: 'tf', left: 'T', right: 'F', leftLabel: { en: 'T Logic', zh: 'T 逻辑' }, rightLabel: { en: 'F Experience', zh: 'F 体验' } },
+      { key: 'jp', left: 'J', right: 'P', leftLabel: { en: 'J Structured', zh: 'J 规划' }, rightLabel: { en: 'P Exploratory', zh: 'P 探索' } }
+    ];
+    axisDefs.forEach(def => {
+      const axis = report.mbti.axes && report.mbti.axes[def.key];
+      if (!axis) return;
+      const leanLeft = axis.lean === def.left;
+      const fillPct = leanLeft ? axis.strength : 100 - axis.strength;
+
+      const div = document.createElement('div');
+      div.className = 'mbti-axis';
+      const leftCls = 'axis-pole' + (leanLeft ? ' lean-active' : '');
+      const rightCls = 'axis-pole' + (!leanLeft ? ' lean-active' : '');
+      div.innerHTML =
+        '<span class="' + leftCls + '"></span>' +
+        '<div class="axis-track"><div class="axis-fill"></div></div>' +
+        '<span class="' + rightCls + '"></span>';
+      div.querySelectorAll('.axis-pole')[0].textContent = t(def.leftLabel);
+      div.querySelectorAll('.axis-pole')[1].textContent = t(def.rightLabel);
+      div.querySelector('.axis-fill').style.width = fillPct + '%';
+      axesDiv.appendChild(div);
+    });
+
+    // Suggestions
+    const sDiv = document.getElementById('suggestions');
+    sDiv.innerHTML = '';
+    (report.suggestions || []).forEach(s => {
+      const priority = s.priority || 'medium';
+      const div = document.createElement('div');
+      div.className = 'suggestion priority-' + priority;
+      div.innerHTML =
+        '<div class="suggestion-icon"></div>' +
+        '<div class="suggestion-body">' +
+          '<div class="suggestion-head">' +
+            '<div class="suggestion-title"></div>' +
+            '<div class="dim-tag"></div>' +
+          '</div>' +
+          '<div class="suggestion-text"></div>' +
+        '</div>';
+      div.querySelector('.suggestion-icon').innerHTML = getPriorityIcon(priority);
+      div.querySelector('.suggestion-title').textContent = t(s.title);
+      // Find dimension name for tag
+      const dimId = s.dimensionId;
+      if (dimId) {
+        const matched = report.dimensions.find(d => d.id === dimId);
+        div.querySelector('.dim-tag').textContent = matched ? t(matched.name) : dimId;
+      } else {
+        div.querySelector('.dim-tag').style.display = 'none';
+      }
+      div.querySelector('.suggestion-text').textContent = t(s.body);
+      sDiv.appendChild(div);
+    });
+
+    // Footer
+    document.getElementById('footer').textContent = tc('footer');
+  }
+
+  function drawRadar(dimensions) {
+    const svg = document.getElementById('radar');
+    const size = 500;
+    const cx = size / 2, cy = size / 2;
+    const maxR = 165;
+    const n = dimensions.length;
+    const svgNS = 'http://www.w3.org/2000/svg';
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    function hexPoint(angle, r) {
+      return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+    }
+
+    // Concentric hexagonal grid (6 rings)
+    for (let ring = 1; ring <= 5; ring++) {
+      const r = (maxR * ring) / 5;
+      const pts = [];
+      for (let i = 0; i < n; i++) {
+        const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+        pts.push(hexPoint(angle, r).join(','));
+      }
+      const poly = document.createElementNS(svgNS, 'polygon');
+      poly.setAttribute('points', pts.join(' '));
+      poly.setAttribute('class', 'grid-hex');
+      svg.appendChild(poly);
+    }
+
+    // Spokes and labels
+    for (let i = 0; i < n; i++) {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const [ex, ey] = hexPoint(angle, maxR);
+
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', cx);
+      line.setAttribute('y1', cy);
+      line.setAttribute('x2', ex);
+      line.setAttribute('y2', ey);
+      line.setAttribute('class', 'spoke');
+      svg.appendChild(line);
+
+      const labelDist = maxR + 30;
+      const [lx, ly] = hexPoint(angle, labelDist);
+      const label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('x', lx);
+      label.setAttribute('y', ly);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'middle');
+      label.setAttribute('class', 'axis-label');
+      label.textContent = t(dimensions[i].name);
+      svg.appendChild(label);
+
+      const score = document.createElementNS(svgNS, 'text');
+      score.setAttribute('x', lx);
+      score.setAttribute('y', ly + 16);
+      score.setAttribute('text-anchor', 'middle');
+      score.setAttribute('class', 'axis-score');
+      score.textContent = dimensions[i].score;
+      svg.appendChild(score);
+    }
+
+    // Data polygon
+    const dataPts = dimensions.map((d, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const score = Math.max(0, Math.min(100, d.score));
+      const r = (maxR * score) / 100;
+      return hexPoint(angle, r).join(',');
+    }).join(' ');
+
+    const poly = document.createElementNS(svgNS, 'polygon');
+    poly.setAttribute('points', dataPts);
+    poly.setAttribute('class', 'data-poly');
+    svg.appendChild(poly);
+
+    // Data dots
+    dimensions.forEach((d, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const score = Math.max(0, Math.min(100, d.score));
+      const r = (maxR * score) / 100;
+      const [x, y] = hexPoint(angle, r);
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', x);
+      dot.setAttribute('cy', y);
+      dot.setAttribute('r', 4);
+      dot.setAttribute('class', 'data-dot');
+      svg.appendChild(dot);
+    });
+  }
+
+  // ===== Language toggle =====
+  const langBtn = document.getElementById('langToggle');
+  langBtn.textContent = lang === 'zh' ? 'EN' : '中文';
+  langBtn.addEventListener('click', () => {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    langBtn.textContent = lang === 'zh' ? 'EN' : '中文';
+    render();
+  });
+
+  // ===== Share Image Generator (pure Canvas, zero dependencies) =====
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    generateShareImage(report);
+  });
+
+  function generateShareImage(report) {
+    const W = 1200, H = 720, P = 56;
+    const canvas = document.createElement('canvas');
+    const dpr = 2;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const bg = '#ffffff';
+    const c1 = '#111118', c2 = '#3a3a48', c3 = '#6a6a7e', c4 = '#9090a5', c5 = '#b5b5c5';
+    const acc = '#8b5cf6', acc2 = '#a78bfa';
+    const gridC = 'rgba(139,92,246,0.14)', spokeC = 'rgba(0,0,0,0.04)', barTr = '#eeeef4';
+    const lc = ['#7c3aed', '#2563eb', '#0891b2', '#16a34a'];
+    const og = report.overallGrade || gradeFromScore(report.overallScore || 0);
+    const gc = GRADE_COLORS[og];
+    const dims = report.dimensions || [];
+    const n = dims.length;
+    const mbti = report.mbti || {};
+    const insightLabel = lang === 'zh' ? '核心洞察' : 'CORE INSIGHT';
+    const gradeDescsL = { S:{en:'In The Zone',zh:'心流共振'}, A:{en:'Synced Up',zh:'默契搭档'}, B:{en:'Finding Groove',zh:'稳步探索'}, C:{en:'Freestyling',zh:'随性对话'}, D:{en:'Day One',zh:'初识旅程'} };
+
+    // ── BG ──
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    let g = ctx.createRadialGradient(W*0.25, H*0.3, 0, W*0.25, H*0.3, 400);
+    g.addColorStop(0, 'rgba(139,92,246,0.05)'); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    g = ctx.createRadialGradient(W*0.8, H*0.6, 0, W*0.8, H*0.6, 350);
+    g.addColorStop(0, 'rgba(96,165,250,0.04)'); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // ── Border ──
+    const brd = ctx.createLinearGradient(0, 0, W, H);
+    brd.addColorStop(0,'rgba(139,92,246,0.4)'); brd.addColorStop(0.35,'rgba(96,165,250,0.25)');
+    brd.addColorStop(0.65,'rgba(34,211,238,0.2)'); brd.addColorStop(1,'rgba(139,92,246,0.4)');
+    ctx.strokeStyle = brd; ctx.lineWidth = 2;
+    roundRect(ctx, 1, 1, W-2, H-2, 28); ctx.stroke();
+
+    // ── Brand ──
+    const bg2 = ctx.createLinearGradient(P, P-4, P+20, P+16);
+    bg2.addColorStop(0, '#8b5cf6'); bg2.addColorStop(1, '#60a5fa');
+    ctx.fillStyle = bg2; roundRect(ctx, P, P-4, 20, 20, 5); ctx.fill();
+    // Radar icon (hexagon + center dot — matches icon.svg)
+    const icx = P+10, icy = P+6, ir = 7;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.3; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= 6; i++) { const a = Math.PI*2*(i%6)/6-Math.PI/2; const px=icx+ir*Math.cos(a), py=icy+ir*Math.sin(a); i===0?ctx.moveTo(px,py):ctx.lineTo(px,py); }
+    ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(icx, icy, 1.5, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = c4; ctx.font = '700 12px Inter,system-ui,sans-serif';
+    ctx.fillText('VIBERADAR', P+28, P+6);
+    ctx.textAlign = 'right'; ctx.fillStyle = c5; ctx.font = '500 12px Inter,system-ui,sans-serif';
+    ctx.fillText(report.project, W-P, P+6);
+    ctx.textAlign = 'left';
+
+    // ═══ LEFT: Grade + Insight + Scores ═══
+    const lx = P, ly = P + 48;
+    ctx.textBaseline = 'alphabetic';
+
+    // Grade letter (big)
+    ctx.fillStyle = gc; ctx.font = '800 100px Inter,system-ui,sans-serif';
+    ctx.shadowColor = gc; ctx.shadowBlur = 28;
+    ctx.fillText(og, lx, ly + 86); ctx.shadowBlur = 0;
+
+    // Grade label + score (next to letter)
+    ctx.fillStyle = c1; ctx.font = '700 22px Inter,system-ui,sans-serif';
+    ctx.fillText(t(gradeDescsL[og]), lx + 88, ly + 48);
+    ctx.fillStyle = c4; ctx.font = '600 15px Inter,system-ui,sans-serif';
+    ctx.fillText((report.overallScore || 0) + ' / 100', lx + 88, ly + 72);
+
+    // Insight
+    ctx.fillStyle = c5; ctx.font = '700 10px Inter,system-ui,sans-serif';
+    ctx.fillText(insightLabel.toUpperCase(), lx, ly + 120);
+    ctx.fillStyle = c1; ctx.font = '500 20px Inter,system-ui,sans-serif';
+    wrapText(ctx, t(report.insight), lx, ly + 146, 420, 28);
+
+    // Score bars (2x3)
+    const barY0 = ly + 260;
+    dims.forEach((d, i) => {
+      const row = i < 3 ? 0 : 1;
+      const col = i % 3;
+      const bx = lx + col * 155;
+      const by = barY0 + row * 60;
+      const dg = d.grade || gradeFromScore(d.score);
+      const dc = GRADE_COLORS[dg];
+      // Use full name (not shortName)
+      ctx.fillStyle = c4; ctx.font = '600 11px Inter,system-ui,sans-serif';
+      ctx.fillText(t(d.name), bx, by);
+      ctx.fillStyle = dc; ctx.font = '700 22px Inter,system-ui,sans-serif';
+      ctx.fillText(String(d.score), bx, by + 26);
+      ctx.fillStyle = barTr; roundRect(ctx, bx, by + 32, 130, 5, 2.5); ctx.fill();
+      ctx.fillStyle = dc; roundRect(ctx, bx, by + 32, 130 * d.score / 100, 5, 2.5); ctx.fill();
+    });
+
+    // ═══ RIGHT: Radar (no center grade) ═══
+    const rcx = 840, rcy = 300, maxR = 170;
+    function hp(a, r) { return [rcx+r*Math.cos(a), rcy+r*Math.sin(a)]; }
+
+    for (let k = 1; k <= 5; k++) {
+      const r = maxR*k/5; ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const a = Math.PI*2*(i%n)/n - Math.PI/2;
+        const [x,y] = hp(a, r);
+        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.closePath(); ctx.strokeStyle = gridC; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI*2*i/n - Math.PI/2;
+      const [ex,ey] = hp(a, maxR);
+      ctx.beginPath(); ctx.moveTo(rcx,rcy); ctx.lineTo(ex,ey);
+      ctx.strokeStyle = spokeC; ctx.lineWidth = 0.8; ctx.stroke();
+      const [lbx,lby] = hp(a, maxR + 28);
+      const dg = dims[i].grade || gradeFromScore(dims[i].score);
+      ctx.fillStyle = c3; ctx.font = '600 12px Inter,system-ui,sans-serif';
+      ctx.fillText(t(dims[i].name), lbx, lby);
+      ctx.fillStyle = GRADE_COLORS[dg]; ctx.font = '700 12px Inter,system-ui,sans-serif';
+      ctx.fillText(String(dims[i].score), lbx, lby + 16);
+    }
+    ctx.beginPath();
+    dims.forEach((d,i) => {
+      const a = Math.PI*2*i/n - Math.PI/2;
+      const r = maxR * Math.max(0,Math.min(100,d.score)) / 100;
+      const [x,y] = hp(a, r);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(139,92,246,0.12)'; ctx.fill();
+    ctx.strokeStyle = acc; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+    dims.forEach((d,i) => {
+      const a = Math.PI*2*i/n - Math.PI/2;
+      const r = maxR * Math.max(0,Math.min(100,d.score)) / 100;
+      const [x,y] = hp(a, r);
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+      ctx.fillStyle = acc; ctx.fill();
+      ctx.strokeStyle = bg; ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    // ═══ BOTTOM: MBTI section ═══
+    const mbtiY = 548;
+    // Divider line
+    ctx.strokeStyle = '#eeeef4'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(P, mbtiY); ctx.lineTo(W - P, mbtiY); ctx.stroke();
+
+    // Tag label
+    const mbtiTag = lang === 'zh' ? 'AI 协作人格' : 'AI COLLABORATION PERSONALITY';
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.fillStyle = c5; ctx.font = '700 9px Inter,system-ui,sans-serif';
+    ctx.fillText(mbtiTag.toUpperCase(), P, mbtiY + 22);
+
+    const mbtiType = mbti.type || 'INTJ';
+
+    // MBTI letters
+    let mx = P;
+    const mbtiRowY = mbtiY + 82;
+    mbtiType.split('').forEach((ch, i) => {
+      ctx.fillStyle = lc[i]; ctx.font = '800 32px Inter,system-ui,sans-serif';
+      ctx.shadowColor = lc[i]; ctx.shadowBlur = 10;
+      ctx.fillText(ch, mx, mbtiRowY); ctx.shadowBlur = 0;
+      mx += 36;
+    });
+
+    // Title + description
+    ctx.fillStyle = c1; ctx.font = '700 18px Inter,system-ui,sans-serif';
+    ctx.fillText(t(mbti.title || ''), mx + 12, mbtiRowY - 14);
+    ctx.fillStyle = c3; ctx.font = '400 13px Inter,system-ui,sans-serif';
+    const descText = t(mbti.description || '');
+    const descLimit = /[\u4e00-\u9fff]/.test(descText) ? 70 : 90;
+    ctx.fillText(descText.length > descLimit ? descText.slice(0, descLimit - 2) + '...' : descText, mx + 12, mbtiRowY + 6);
+
+    // Brand right
+    ctx.textAlign = 'right'; ctx.fillStyle = c5; ctx.font = '500 11px Inter,system-ui,sans-serif';
+    ctx.fillText('viberadar.dev', W - P, H - P + 14);
+
+    // ── Download ──
+    const ts = new Date().toISOString().slice(0,10);
+    canvas.toBlob(function(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'VibeRadar-' + (report.project || 'report') + '-' + og + '-' + ts + '.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function wrapText(ctx, text, x, y, maxW, lineH) {
+    const isZh = /[\u4e00-\u9fff]/.test(text);
+    const tokens = isZh ? text.split('') : text.split(' ');
+    const joiner = isZh ? '' : ' ';
+    let line = '';
+    let lines = 0;
+    for (let i = 0; i < tokens.length; i++) {
+      const test = line ? line + joiner + tokens[i] : tokens[i];
+      if (ctx.measureText(test).width > maxW && line) {
+        ctx.fillText(line, x, y + lines * lineH);
+        line = tokens[i];
+        lines++;
+        if (lines >= 5) { ctx.fillText(line + '...', x, y + lines * lineH); return; }
+      } else {
+        line = test;
+      }
+    }
+    ctx.fillText(line, x, y + lines * lineH);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
