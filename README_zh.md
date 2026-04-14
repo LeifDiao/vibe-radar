@@ -35,12 +35,24 @@
 
 ## 安装
 
+**第一步** — 添加插件市场：
+
+```
+/plugin marketplace add LeifDiao/vibe-radar
+```
+
+**第二步** — 安装插件：
+
+```
+/plugin install vibe-radar@vibe-radar-marketplace
+```
+
+**手动安装：**
+
 ```bash
 git clone https://github.com/LeifDiao/vibe-radar.git ~/vibe-radar
 claude --plugin-dir ~/vibe-radar
 ```
-
-只需克隆一次，之后每次使用时用 `--plugin-dir` 启动 Claude Code 即可。
 
 ---
 

@@ -1,0 +1,13 @@
+{
+  "name": "vibe-radar-marketplace",
+  "owner": {
+    "name": "Leif Diao"
+  },
+  "plugins": [
+    {
+      "name": "vibe-radar",
+      "description": "Review your Claude Code collaboration habits: 6 dimensions, actionable next steps, and a local HTML report.",
+      "source": "./"
+    }
+  ]
+}

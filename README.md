@@ -35,12 +35,24 @@ The report is delivered as a polished single-file HTML with automatic language d
 
 ## Install
 
+**Step 1** — Add the marketplace:
+
+```
+/plugin marketplace add LeifDiao/vibe-radar
+```
+
+**Step 2** — Install the plugin:
+
+```
+/plugin install vibe-radar@vibe-radar-marketplace
+```
+
+**Alternative (manual):**
+
 ```bash
 git clone https://github.com/LeifDiao/vibe-radar.git ~/vibe-radar
 claude --plugin-dir ~/vibe-radar
 ```
-
-Clone once, then start Claude Code with `--plugin-dir` each time you want to use VibeRadar.
 
 ---
 
