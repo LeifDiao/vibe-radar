@@ -34,18 +34,12 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root {
       --bg-0: #06060b; --bg-1: #0e0e16; --bg-2: #16161f; --bg-3: #1e1e2a;
       --text-1: #f3f4f6; --text-2: #d1d5db; --text-3: #9ca3af; --text-4: #6b7280; --text-5: #4b5563;
       --border-1: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.08); --border-3: rgba(255,255,255,0.12);
       --radar-spoke: rgba(255,255,255,0.06);
     }
-  }
-  [data-theme="dark"] {
-    --bg-0: #06060b; --bg-1: #0e0e16; --bg-2: #16161f; --bg-3: #1e1e2a;
-    --text-1: #f3f4f6; --text-2: #d1d5db; --text-3: #9ca3af; --text-4: #6b7280; --text-5: #4b5563;
-    --border-1: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.08); --border-3: rgba(255,255,255,0.12);
-    --radar-spoke: rgba(255,255,255,0.06);
   }
 
   * { box-sizing: border-box; }
@@ -106,50 +100,10 @@
     color: transparent;
   }
 
-  .lang-toggle {
-    background: var(--bg-1);
-    border: 1px solid var(--border-2);
-    color: var(--text-2);
-    padding: 8px 16px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-family: inherit;
-  }
-  .lang-toggle:hover {
-    background: var(--bg-2);
-    border-color: var(--border-3);
-    color: var(--text-1);
-    transform: translateY(-1px);
-  }
-
   .header-actions {
     display: flex;
     gap: 8px;
     align-items: center;
-  }
-
-  .icon-toggle {
-    background: var(--bg-1);
-    border: 1px solid var(--border-2);
-    color: var(--text-2);
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 0;
-  }
-  .icon-toggle:hover {
-    background: var(--bg-2);
-    border-color: var(--border-3);
-    color: var(--text-1);
-    transform: translateY(-1px);
   }
 
   .share-btn {
@@ -898,10 +852,6 @@
       <div class="logo-text">VibeRadar</div>
     </div>
     <div class="header-actions">
-      <button class="lang-toggle" id="langToggle">EN</button>
-      <button class="icon-toggle" id="themeToggle" title="Toggle theme">
-        <svg id="themeIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
       <button class="share-btn" id="shareBtn">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         Share
@@ -1023,28 +973,7 @@
     return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg>';
   }
 
-  // ===== Theme: detect OS preference, allow manual toggle =====
-  function getPreferredTheme() {
-    const stored = localStorage.getItem('viberadar-theme');
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    const icon = document.getElementById('themeIcon');
-    if (theme === 'dark') {
-      icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-    } else {
-      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-    }
-  }
-  let currentTheme = getPreferredTheme();
-  applyTheme(currentTheme);
-  document.getElementById('themeToggle').addEventListener('click', () => {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    applyTheme(currentTheme);
-    localStorage.setItem('viberadar-theme', currentTheme);
-  });
+  // ===== Theme: follow OS preference automatically =====
 
   const raw = document.getElementById('report-data').textContent;
   let report;
@@ -1344,14 +1273,7 @@
     });
   }
 
-  // ===== Language toggle =====
-  const langBtn = document.getElementById('langToggle');
-  langBtn.textContent = lang === 'zh' ? 'EN' : '中文';
-  langBtn.addEventListener('click', () => {
-    lang = lang === 'zh' ? 'en' : 'zh';
-    langBtn.textContent = lang === 'zh' ? 'EN' : '中文';
-    render();
-  });
+  // Language is determined by report.language (set by AI based on system language)
 
   // ===== Share Image Generator (pure Canvas, zero dependencies) =====
   document.getElementById('shareBtn').addEventListener('click', () => {
