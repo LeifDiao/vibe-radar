@@ -1,14 +1,14 @@
 {
-  "name": "vibe-radar",
-  "description": "Review your Claude Code collaboration habits: 6 dimensions, actionable next steps, and a local HTML report.",
-  "version": "1.0.0",
+  "name": "claude-radar",
+  "description": "Review your Claude Code collaboration across 9 dimensions in 3 categories (Communication / Engineering / Outcome) — with a project-type-aware fair scoring model, a free-form AI diagnosis, and 3-7 actionable suggestions including pastable prompt rewrites. 100% local single-file HTML report.",
+  "version": "2.0.0",
   "author": {
     "name": "Leif Diao",
     "email": "leifdiao@gmail.com",
     "url": "https://github.com/LeifDiao"
   },
   "license": "CC-BY-NC-4.0",
-  "homepage": "https://github.com/LeifDiao/vibe-radar",
-  "repository": "https://github.com/LeifDiao/vibe-radar",
-  "keywords": ["analysis", "collaboration", "mbti", "productivity", "diagnostics"]
+  "homepage": "https://github.com/LeifDiao/claude-radar",
+  "repository": "https://github.com/LeifDiao/claude-radar",
+  "keywords": ["analysis", "collaboration", "productivity", "diagnostics", "claude-code"]
 }
