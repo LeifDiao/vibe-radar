@@ -53,8 +53,8 @@ const safeJson = JSON.stringify(report).replace(/<\/script/gi, '<\\/script');
 const html = template.replace('{{REPORT_DATA}}', safeJson);
 
 // Output path
-const reportsDir = path.join(os.homedir(), '.vibe-radar', 'reports');
-const tempDir = path.join(os.homedir(), '.vibe-radar', 'temp');
+const reportsDir = path.join(os.homedir(), '.claude-radar', 'reports');
+const tempDir = path.join(os.homedir(), '.claude-radar', 'temp');
 fs.mkdirSync(reportsDir, { recursive: true });
 fs.mkdirSync(tempDir, { recursive: true });
 
@@ -109,7 +109,7 @@ if (!noOpen) opened = openFile(outPath);
 
 // Fallback: tell user to open manually if auto-open failed
 if (!noOpen && !opened) {
-  process.stderr.write(`[vibe-radar] Couldn't auto-open browser. Open manually:\n  ${outPath}\n`);
+  process.stderr.write(`[claude-radar] Couldn't auto-open browser. Open manually:\n  ${outPath}\n`);
 }
 
 process.stdout.write(outPath + '\n');

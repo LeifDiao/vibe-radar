@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-// parse-project.mjs — Position-aware signal extraction + behavioral MBTI signals
+// parse-project.mjs — Facts extraction for ClaudeRadar
+// Adds: tool/skill/MCP/subagent/plan/custom-command stats, CLAUDE.md detection,
+// per-session outcomes, project profile auto-detection, density-based confidence.
+// MBTI signals removed.
 // Usage: node parse-project.mjs <project-path>
-// Output (stdout): facts JSON
+// Output (stdout): facts JSON (schemaVersion 2.0)
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Constants
@@ -65,43 +69,45 @@ const KEYWORDS = {
     zh: ['不对', '不是', '错了', '改成', '换成', '应该是', '不要这样', '有问题', '但是这个'],
     en: ['wrong', 'incorrect', 'instead', 'rather', "that's not", 'actually', 'should be', 'not what', 'change to', 'no,']
   },
-
-  // MBTI keyword lists (kept for supplementary signal)
-  mbtiE: {
-    zh: ['我在想', '也许可以', '或者', '不确定', '我觉得', '可能', '让我想想', '我们', '团队', '大家', '分享', '讨论一下', '聊聊'],
-    en: ['i think', 'maybe', 'perhaps', 'not sure', 'i wonder', 'what if', 'let me think', 'we should', 'team', 'everyone', 'share', 'discuss', "let's talk"]
-  },
-  mbtiN: {
-    zh: ['架构', '设计模式', '理念', '方向', '策略', '全局', '系统设计', '整体', '原则', '如果', '将来', '扩展', '为什么'],
-    en: ['architecture', 'pattern', 'vision', 'strategy', 'design philosophy', 'paradigm', 'principle', 'what if', 'future', 'extensible', 'scalable', 'why not']
-  },
-  mbtiT: {
-    zh: ['性能', '效率', '复杂度', '优化', '速度', '内存', '正确', '逻辑', '比较', '最优', '健壮', '边界情况', '并发'],
-    en: ['performance', 'efficiency', 'complexity', 'optimize', 'speed', 'memory', 'correctness', 'logic', 'compare', 'optimal', 'robust', 'edge case', 'concurrency', 'benchmark']
-  },
-  mbtiF: {
-    zh: ['体验', '可读性', '用户', '直觉', '简洁', '优雅', '美观', '易用', '感觉', '谢谢', '不好意思', '好看'],
-    en: ['experience', 'readability', 'user', 'intuitive', 'clean', 'elegant', 'usability', 'thanks', 'sorry', 'looks good', 'feels like', 'beautiful']
-  },
-  mbtiJ: {
-    zh: ['计划', '步骤', '规划', '路线', '方案', '目标是', '先做', '后做', '阶段', '需求', '规范', '最终', '确定', '完成'],
-    en: ['plan', 'step', 'roadmap', 'approach', 'goal is', 'phase', 'milestone', 'schedule', 'requirements', 'spec', 'final', 'confirm', 'decided']
-  },
-  mbtiP: {
-    zh: ['试试看', '探索', '实验', '玩一下', '好奇', '有趣', '或者', '也可以', '随便', '先这样'],
-    en: ['try', 'explore', 'experiment', "let's see", 'play with', 'curious', 'interesting', 'or maybe', 'could also', 'whatever works', 'for now']
+  // explicit completion / closure signals
+  completion: {
+    zh: ['搞定', '完成了', '收工', '解决了', '可以了', '没问题了', '搞好了', '成了', '通过了', '上线了'],
+    en: ['done', 'finished', 'ship it', 'wrap up', 'all set', "we're good", 'works now', 'all green', 'shipped', 'merged']
   }
 };
 
-// Pre-merge keyword arrays for performance (avoid repeated spread)
 const MERGED_KEYWORDS = {};
 for (const [key, val] of Object.entries(KEYWORDS)) {
   MERGED_KEYWORDS[key] = [...(val.zh || []), ...(val.en || [])].map(k => k.toLowerCase());
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Regex patterns (module-level — no stateful g flag, safe to reuse)
-// ═══════════════════════════════════════════════════════════════════════════���═
+// Tool categorization
+const TOOL_CATEGORY = {
+  Edit: 'fileEdit', Write: 'fileEdit', NotebookEdit: 'fileEdit',
+  Bash: 'bash',
+  Read: 'read',
+  Grep: 'search', Glob: 'search',
+  WebFetch: 'web', WebSearch: 'web',
+  TodoWrite: 'todo', TaskCreate: 'todo', TaskUpdate: 'todo', TaskList: 'todo', TaskGet: 'todo',
+  Skill: 'skill',
+  Agent: 'subagent', Task: 'subagent',
+  ExitPlanMode: 'planMode', EnterPlanMode: 'planMode',
+  AskUserQuestion: 'ask'
+};
+
+function categorizeTool(name) {
+  if (!name) return 'other';
+  if (TOOL_CATEGORY[name]) return TOOL_CATEGORY[name];
+  if (name.startsWith('mcp__')) return 'mcp';
+  return 'other';
+}
+
+function extractMcpServer(name) {
+  if (!name.startsWith('mcp__')) return null;
+  const rest = name.slice(5);
+  const idx = rest.indexOf('__');
+  return idx > 0 ? rest.slice(0, idx) : rest;
+}
 
 const REGEX = {
   filePath: /(?:\.{0,2}\/[\w.@-]+)+\.\w+|\/(?:[\w.@-]+\/)*[\w.@-]+\.\w+|[\w.@-]+\/[\w.@-]+(?:\/[\w.@-]+)*\.\w+|[A-Z]:\\[\w.@\\-]+\.\w+/,
@@ -109,7 +115,8 @@ const REGEX = {
   error: /\b(?:Error|Exception|TypeError|SyntaxError|ReferenceError|ENOENT|EACCES|EPERM|panic|fatal|stack trace|traceback|报错|错误|崩溃|失败)\b/i,
   codeBlock: /```[\s\S]*?```/,
   listStructure: /^\s*(?:\d+[.)]\s|-\s|\*\s)/m,
-  paragraph: /\n\n/
+  paragraph: /\n\n/,
+  slashCommand: /(?:^|\s)\/([a-zA-Z][\w-]+)/
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -143,8 +150,8 @@ function jaccard(a, b) {
   const tokenize = (t) => {
     const tokens = new Set();
     const lower = t.toLowerCase();
-    lower.replace(/[^\w\u4e00-\u9fff]+/g, ' ').split(/\s+/).filter(w => w.length > 1).forEach(w => tokens.add(w));
-    const chinese = lower.replace(/[^\u4e00-\u9fff]/g, '');
+    lower.replace(/[^\w一-鿿]+/g, ' ').split(/\s+/).filter(w => w.length > 1).forEach(w => tokens.add(w));
+    const chinese = lower.replace(/[^一-鿿]/g, '');
     for (let i = 0; i < chinese.length - 1; i++) tokens.add(chinese.slice(i, i + 2));
     return tokens;
   };
@@ -199,35 +206,23 @@ function hasAssistantToolUse(content) {
   return Array.isArray(content) && content.some(b => b && b.type === 'tool_use');
 }
 
-function extractToolNames(content) {
+function extractToolUses(content) {
   if (!Array.isArray(content)) return [];
-  return content.filter(b => b && b.type === 'tool_use').map(b => b.name).filter(Boolean);
-}
-
-function countToolUses(content, stats) {
-  if (!Array.isArray(content)) return;
-  for (const block of content) {
-    if (!block || block.type !== 'tool_use') continue;
-    stats.toolUseCount++;
-    const name = block.name;
-    if (name === 'Edit' || name === 'Write' || name === 'NotebookEdit') stats.fileEditCount++;
-    else if (name === 'Bash') stats.bashCommandCount++;
-    else if (name === 'Read') stats.readToolCount++;
-    else if (name === 'Grep' || name === 'Glob') stats.grepToolCount++;
-    else if (name === 'WebFetch' || name === 'WebSearch') stats.webFetchCount++;
-    else if (name === 'TodoWrite' || name === 'TaskCreate') stats.todoToolCount++;
-  }
+  return content
+    .filter(b => b && b.type === 'tool_use')
+    .map(b => ({ name: b.name, input: b.input || {} }));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Label computation (per-message content signals)
+// Label computation
 // ═════════════════════════════════════════════════════════════════════════════
 
 const LABEL_KEYS = [
   'hasFilePath', 'hasIdentifier', 'hasError', 'hasCodeBlock', 'hasListStructure',
   'hasExpectedBehavior', 'hasConstraint', 'isVague', 'hasReasoning',
   'requestTest', 'thinkFirst', 'proactiveReview',
-  'progressive', 'checkpoint', 'summary', 'milestone', 'hasTechStack'
+  'progressive', 'checkpoint', 'summary', 'milestone', 'hasTechStack',
+  'hasCompletion'
 ];
 
 function computeLabels(text) {
@@ -248,91 +243,32 @@ function computeLabels(text) {
   if (matchesAny(text, 'checkpoint')) labels.checkpoint = true;
   if (matchesAny(text, 'summary')) labels.summary = true;
   if (matchesAny(text, 'milestone')) labels.milestone = true;
+  if (matchesAny(text, 'completion')) labels.hasCompletion = true;
   if (matchesAnyTechStack(text)) labels.hasTechStack = true;
   return labels;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Position classification
-//
-// Each user message gets exactly one position label:
-//   opening    — first 2 user messages per session
-//   directing  — new task/instruction (not reacting to AI output)
-//   correcting — after AI produced output + user shows correction intent
-//   confirming — after AI produced output + user gives short acknowledgment
-//   continuing — everything else
 // ═════════════════════════════════════════════════════════════════════════════
 
 const POSITIONS = ['opening', 'directing', 'correcting', 'confirming', 'continuing'];
 
 function classifyPosition(messages, index, sessionUserIndex) {
-  // Opening: first 2 user messages in the session
   if (sessionUserIndex < 2) return 'opening';
-
-  // Find the most recent assistant message before this user message
   let prevAssistant = null;
   for (let i = index - 1; i >= 0; i--) {
-    if (messages[i].role === 'assistant') {
-      prevAssistant = messages[i];
-      break;
-    }
+    if (messages[i].role === 'assistant') { prevAssistant = messages[i]; break; }
   }
-
-  // No previous assistant message → directing
   if (!prevAssistant) return 'directing';
-
-  // Did the previous assistant turn produce code or tool output?
-  const prevHadOutput = hasAssistantToolUse(prevAssistant.content) ||
-                        /```/.test(prevAssistant.text || '');
-
+  const prevHadOutput = hasAssistantToolUse(prevAssistant.content) || /```/.test(prevAssistant.text || '');
   if (!prevHadOutput) return 'directing';
-
-  // Previous assistant had substantive output — is the user reacting to it?
   const text = messages[index].text;
-
-  // Correction signals — check BEFORE length, so short corrections aren't misclassified
   if (matchesAny(text, 'correction')) return 'correcting';
-
-  // Short message after output with no correction keywords → confirming
   if (text.length < 80) return 'confirming';
-
-  // Long message but no correction → new directing
   return 'directing';
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Behavioral signal functions (for MBTI + dimension enrichment)
-// ═════════════════════════════════════════════════════════════════════════════
-
-// E/I: Does the message expose a reasoning chain (2+ causal connectors)?
-const CAUSAL_CONNECTORS_ZH = ['因为', '所以', '但是', '不过', '然而', '虽然', '如果', '那么', '首先', '其次', '一方面', '另一方面'];
-const CAUSAL_CONNECTORS_EN = ['because', 'therefore', 'however', 'although', 'but', 'if', 'then', 'since', 'while', 'whereas', 'on the other hand', 'first', 'second', 'furthermore'];
-
-function countCausalConnectors(text) {
-  const lower = text.toLowerCase();
-  let count = 0;
-  for (const c of CAUSAL_CONNECTORS_ZH) { if (lower.includes(c)) count++; }
-  for (const c of CAUSAL_CONNECTORS_EN) { if (lower.includes(c)) count++; }
-  return count;
-}
-
-function hasReasoningChain(text) {
-  return text.length > 80 && countCausalConnectors(text) >= 2;
-}
-
-// E/I: Is the message a terse directive (short + contains filePath or identifier)?
-function isDirectiveMessage(text) {
-  return text.length < 120 && (REGEX.filePath.test(text) || REGEX.identifier.test(text));
-}
-
-// T/F: Extract T/F keyword matches specifically from correcting-position messages
-function computeTFInContext(text) {
-  const t = matchesAny(text, 'mbtiT');
-  const f = matchesAny(text, 'mbtiF');
-  return { t, f };
-}
-
-// J/P: Count demand action verbs (for demand overload detection)
 function countDemandActions(text) {
   const actionsZh = ['实现', '添加', '创建', '修改', '更新', '删除', '移除', '写', '修复', '改成'];
   const actionsEn = ['implement', 'add', 'create', 'modify', 'change', 'update', 'delete', 'remove', 'write', 'build', 'fix', 'refactor'];
@@ -340,6 +276,166 @@ function countDemandActions(text) {
   const actionCount = [...actionsZh, ...actionsEn].filter(w => matchesWordBoundary(lower, w.toLowerCase())).length;
   const listItems = (text.match(/^\s*(?:\d+[.)]\s|-\s|\*\s)/gm) || []).length;
   return Math.max(actionCount, listItems);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Project asset detection (CLAUDE.md / memory / subagents config)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function detectProjectAssets(cwdPath) {
+  const result = {
+    cwdResolved: false,
+    cwdPath: cwdPath || null,
+    hasClaudeMd: false,
+    claudeMdSize: 0,
+    hasMemoryDir: false,
+    memoryFileCount: 0,
+    hasAgentsDir: false,
+    agentCount: 0,
+    hasCommandsDir: false,
+    commandCount: 0,
+    hasSettingsJson: false
+  };
+  if (!cwdPath) return result;
+  try {
+    if (!fs.existsSync(cwdPath) || !fs.statSync(cwdPath).isDirectory()) return result;
+  } catch { return result; }
+  result.cwdResolved = true;
+
+  const claudeMd = path.join(cwdPath, 'CLAUDE.md');
+  try {
+    if (fs.existsSync(claudeMd)) {
+      result.hasClaudeMd = true;
+      result.claudeMdSize = fs.statSync(claudeMd).size;
+    }
+  } catch {}
+
+  const memoryDir = path.join(cwdPath, '.claude', 'memory');
+  try {
+    if (fs.existsSync(memoryDir) && fs.statSync(memoryDir).isDirectory()) {
+      result.hasMemoryDir = true;
+      result.memoryFileCount = fs.readdirSync(memoryDir).filter(f => f.endsWith('.md')).length;
+    }
+  } catch {}
+
+  const agentsDir = path.join(cwdPath, '.claude', 'agents');
+  try {
+    if (fs.existsSync(agentsDir) && fs.statSync(agentsDir).isDirectory()) {
+      result.hasAgentsDir = true;
+      result.agentCount = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md')).length;
+    }
+  } catch {}
+
+  const commandsDir = path.join(cwdPath, '.claude', 'commands');
+  try {
+    if (fs.existsSync(commandsDir) && fs.statSync(commandsDir).isDirectory()) {
+      result.hasCommandsDir = true;
+      result.commandCount = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md')).length;
+    }
+  } catch {}
+
+  try {
+    if (fs.existsSync(path.join(cwdPath, '.claude', 'settings.json'))) {
+      result.hasSettingsJson = true;
+    }
+  } catch {}
+
+  return result;
+}
+
+// Decode slug like "-Users-leifdiao-Projects-foo" → "/Users/leifdiao/Projects/foo".
+// Lossy: cannot distinguish space vs dash in directory names. Best-effort + filesystem check.
+function decodeProjectSlug(slug) {
+  if (!slug || typeof slug !== 'string') return null;
+  if (!slug.startsWith('-')) return null;
+  const naive = slug.replace(/-/g, '/');
+  try {
+    if (fs.existsSync(naive) && fs.statSync(naive).isDirectory()) return naive;
+  } catch {}
+  // Try replacing single dashes with spaces in path segments (fallback)
+  // Walk progressively: check at each level if a directory matches
+  const segments = naive.split('/').filter(Boolean);
+  let resolved = '/';
+  for (const seg of segments) {
+    let next = path.join(resolved, seg);
+    if (fs.existsSync(next)) { resolved = next; continue; }
+    // Try variants: replace dashes with spaces
+    let found = false;
+    try {
+      const siblings = fs.readdirSync(resolved);
+      // exact match with dashes → spaces
+      const candidate = sibling => sibling.replace(/ /g, '-') === seg;
+      const match = siblings.find(s => candidate(s));
+      if (match) { resolved = path.join(resolved, match); found = true; }
+    } catch {}
+    if (!found) return null;
+  }
+  try {
+    if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) return resolved;
+  } catch {}
+  return null;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Profile detection
+// ═════════════════════════════════════════════════════════════════════════════
+
+function detectProfile(stats, dateRange, totals) {
+  const sessions = stats.validSessions || 0;
+  const msgs = stats.humanMessages || 0;
+  const edits = totals.fileEditCount || 0;
+  const editRatio = edits / Math.max(msgs, 1);
+  let daySpan = 0;
+  if (dateRange[0] && dateRange[1]) {
+    daySpan = (new Date(dateRange[1]) - new Date(dateRange[0])) / 86400000;
+  }
+
+  if (sessions <= 2 && msgs <= 15) {
+    return {
+      type: 'one-shot',
+      label: { en: 'One-shot task', zh: '一次性任务' },
+      rationale: {
+        en: `${sessions} session${sessions === 1 ? '' : 's'}, ${msgs} message${msgs === 1 ? '' : 's'} — too small for full-spectrum evaluation`,
+        zh: `${sessions} 个会话、${msgs} 条消息 — 体量太小不做全维评估`
+      },
+      naDimensions: ['architecture', 'tempo', 'completion'],
+      categoryWeights: { communication: 0.5, engineering: 0.1, outcome: 0.4 }
+    };
+  }
+  if (sessions >= 20 || daySpan > 7) {
+    return {
+      type: 'long-running',
+      label: { en: 'Long-running project', zh: '长期项目' },
+      rationale: {
+        en: `${sessions} sessions across ${Math.round(daySpan)} days — engineering setup matters more`,
+        zh: `跨 ${Math.round(daySpan)} 天的 ${sessions} 个会话 — 工程化设置更重要`
+      },
+      naDimensions: [],
+      categoryWeights: { communication: 0.3, engineering: 0.4, outcome: 0.3 }
+    };
+  }
+  if (editRatio < 0.1 && msgs > 20) {
+    return {
+      type: 'learning',
+      label: { en: 'Learning / exploration', zh: '学习探索' },
+      rationale: {
+        en: `Q&A-heavy: ${(editRatio * 100).toFixed(1)}% of messages led to edits`,
+        zh: `问答为主：仅 ${(editRatio * 100).toFixed(1)}% 的消息触发修改`
+      },
+      naDimensions: ['efficiency', 'completion'],
+      categoryWeights: { communication: 0.7, engineering: 0.3, outcome: 0 }
+    };
+  }
+  return {
+    type: 'feature-build',
+    label: { en: 'Feature build', zh: '功能开发' },
+    rationale: {
+      en: `${sessions} sessions with balanced edit/discussion ratio`,
+      zh: `${sessions} 个会话，编辑与讨论比例正常`
+    },
+    naDimensions: [],
+    categoryWeights: { communication: 0.34, engineering: 0.33, outcome: 0.33 }
+  };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -357,6 +453,7 @@ if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
 }
 
 const sessionFiles = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl')).sort();
+const projectSlug = path.basename(projectPath);
 
 // ─── Accumulators ────────────────────────────────────────────────────────────
 
@@ -366,13 +463,6 @@ const stats = {
   assistantMessages: 0,
   avgHumanMsgChars: 0,
   avgAssistantMsgChars: 0,
-  toolUseCount: 0,
-  fileEditCount: 0,
-  bashCommandCount: 0,
-  readToolCount: 0,
-  grepToolCount: 0,
-  webFetchCount: 0,
-  todoToolCount: 0,
   sessionsTooShort: 0,
   validSessions: 0,
   codeBlockCount: 0,
@@ -381,9 +471,20 @@ const stats = {
   longMessageCount: 0
 };
 
+const toolUsage = {
+  total: 0,
+  byCategory: { fileEdit: 0, bash: 0, read: 0, search: 0, web: 0, todo: 0, skill: 0, subagent: 0, planMode: 0, mcp: 0, ask: 0, other: 0 },
+  byName: {},
+  mcpServers: {},
+  skillsUsed: {},
+  customCommandsInvoked: {}
+};
+
 let totalHumanChars = 0;
 let totalAssistantChars = 0;
 const dateSet = new Set();
+const distinctFilesTouched = new Set();
+const cwdCandidates = new Set();
 
 const patterns = {
   blindAccepts: 0,
@@ -394,11 +495,9 @@ const patterns = {
   noReplyToQuestion: 0
 };
 
-// Global label counts (kept for overview / backward compat)
 const labelCounts = {};
 for (const k of LABEL_KEYS) labelCounts[k] = 0;
 
-// Position-aware signal counts
 function makePositionBucket() {
   const bucket = { messageCount: 0 };
   for (const k of LABEL_KEYS) bucket[k] = 0;
@@ -406,25 +505,6 @@ function makePositionBucket() {
 }
 const signalsByPosition = {};
 for (const pos of POSITIONS) signalsByPosition[pos] = makePositionBucket();
-
-// MBTI accumulators
-const mbti = {
-  // Keyword counts
-  eCount: 0, nCount: 0, tCount: 0, fCount: 0, jCount: 0, pCount: 0,
-  // Behavioral counts
-  reasoningChainCount: 0,
-  directiveCount: 0,
-  longMsgCount: 0,       // > 200 chars
-  shortMsgCount: 0,      // < 60 chars
-  concreteRefCount: 0,   // messages with filePath + identifier
-  abstractRefCount: 0,   // messages with N keywords but no filePath
-  // T/F in correcting position
-  correctingTCount: 0,
-  correctingFCount: 0,
-  // J/P session arc signals (computed per session, averaged later)
-  sessionLinearities: [],
-  directionChangeCount: 0
-};
 
 const firstMessageAgg = {
   lengths: [],
@@ -438,15 +518,14 @@ const firstMessageAgg = {
 const keyMessages = [];
 const sampleExchanges = [];
 const MAX_SAMPLES = 10;
-
 const sessionRecords = [];
+const sessionOutcomes = [];
 
 // ─── Process each session ────────────────────────────────────────────────────
 
 for (const fileName of sessionFiles) {
   const fullPath = path.join(projectPath, fileName);
 
-  // Skip files > 50MB
   try {
     const fileStat = fs.statSync(fullPath);
     if (fileStat.size > 50 * 1024 * 1024) continue;
@@ -461,7 +540,11 @@ for (const fileName of sessionFiles) {
     try { rawEntries.push(JSON.parse(line)); } catch {}
   }
 
-  // Normalize + filter injected messages
+  // cwd may be embedded as a top-level field on entries
+  for (const entry of rawEntries) {
+    if (entry && typeof entry.cwd === 'string') cwdCandidates.add(entry.cwd);
+  }
+
   const messages = [];
   for (const entry of rawEntries) {
     const role = extractRole(entry);
@@ -496,7 +579,22 @@ for (const fileName of sessionFiles) {
     compact: []
   };
 
-  // ─── First user message features ────────────────────────────────────────
+  const sessionOutcome = {
+    file: sessionRec.file,
+    humanMsgs: sessionHumanMsgs,
+    fileEdits: 0,
+    bashCalls: 0,
+    reads: 0,
+    toolUses: 0,
+    distinctFiles: new Set(),
+    skillsInvoked: [],
+    mcpInvoked: [],
+    subagentCalls: 0,
+    planModeUses: 0,
+    customCommandsUsed: [],
+    endedCleanly: false,
+    hasCompletionSignal: false
+  };
 
   const firstUserIdx = messages.findIndex(m => m.role === 'user');
   if (firstUserIdx >= 0) {
@@ -510,12 +608,16 @@ for (const fileName of sessionFiles) {
     if (firstMessageAgg.samples.length < 5 && first.text.length > 30) {
       firstMessageAgg.samples.push(first.text.slice(0, 200));
     }
+    // Detect slash-command invocation in opening
+    const slashMatch = first.text.match(REGEX.slashCommand);
+    if (slashMatch) {
+      const cmd = '/' + slashMatch[1];
+      sessionOutcome.customCommandsUsed.push(cmd);
+      toolUsage.customCommandsInvoked[cmd] = (toolUsage.customCommandsInvoked[cmd] || 0) + 1;
+    }
   }
 
-  // ─── Walk messages ────────────────────────────────────���─────────────────
-
   let sessionUserIndex = 0;
-  const sessionUserTexts = []; // for J/P arc linearity
 
   for (let mi = 0; mi < messages.length; mi++) {
     const m = messages[mi];
@@ -525,14 +627,13 @@ for (const fileName of sessionFiles) {
       dateSet.add(m.timestamp.slice(0, 10));
     }
 
-    // Compact flow representation
     if (sessionRec.compact.length < 20) {
-      const tools = m.role === 'assistant' ? extractToolNames(m.content) : [];
+      const toolUses = m.role === 'assistant' ? extractToolUses(m.content) : [];
       sessionRec.compact.push({
         role: m.role,
         length: m.text.length,
         textShort: m.text.slice(0, 140),
-        tools
+        tools: toolUses.map(t => t.name)
       });
     }
 
@@ -546,70 +647,66 @@ for (const fileName of sessionFiles) {
       if (REGEX.codeBlock.test(m.text)) stats.codeBlockCount++;
       if (REGEX.listStructure.test(m.text)) stats.listStructureCount++;
 
-      // ── Position classification ──────────────────────────────────────
       const position = classifyPosition(messages, mi, sessionUserIndex);
       sessionUserIndex++;
 
-      // ── Labels ───────────────────────────────────────────────────────
       const labels = computeLabels(m.text);
-
-      // Accumulate into global counts
       for (const lbl of Object.keys(labels)) {
         if (labelCounts[lbl] !== undefined) labelCounts[lbl]++;
       }
+      if (labels.hasCompletion) sessionOutcome.hasCompletionSignal = true;
 
-      // Accumulate into position bucket
       const bucket = signalsByPosition[position];
       bucket.messageCount++;
       for (const lbl of Object.keys(labels)) {
         if (bucket[lbl] !== undefined) bucket[lbl]++;
       }
 
-      // ── MBTI keyword signals ─────────────────────────────────────────
-      if (matchesAny(m.text, 'mbtiE')) mbti.eCount++;
-      if (matchesAny(m.text, 'mbtiN')) mbti.nCount++;
-      if (matchesAny(m.text, 'mbtiT')) mbti.tCount++;
-      if (matchesAny(m.text, 'mbtiF')) mbti.fCount++;
-      if (matchesAny(m.text, 'mbtiJ')) mbti.jCount++;
-      if (matchesAny(m.text, 'mbtiP')) mbti.pCount++;
-
-      // ── MBTI behavioral signals ────────────────────────────────────��─
-      if (hasReasoningChain(m.text)) mbti.reasoningChainCount++;
-      if (isDirectiveMessage(m.text)) mbti.directiveCount++;
-      if (m.text.length > 200) mbti.longMsgCount++;
-      if (m.text.length < 60) mbti.shortMsgCount++;
-
-      // S/N behavioral: concrete (filePath + identifier) vs abstract (N keywords, no filePath)
-      if (labels.hasFilePath && labels.hasIdentifier) mbti.concreteRefCount++;
-      if (matchesAny(m.text, 'mbtiN') && !labels.hasFilePath) mbti.abstractRefCount++;
-
-      // T/F in correcting position
-      if (position === 'correcting') {
-        const tf = computeTFInContext(m.text);
-        if (tf.t) mbti.correctingTCount++;
-        if (tf.f) mbti.correctingFCount++;
-      }
-
-      // J/P: track user texts for session arc linearity
-      if (m.text.length > 20) sessionUserTexts.push(m.text);
-
-      // ── Pattern detection ────────────────────────────────────────────
-
-      // Demand overload
-      if (m.text.length > 300 && countDemandActions(m.text) >= 3) {
-        patterns.demandOverloads++;
-      }
-
-      // Long unstructured
-      if (m.text.length > 500 &&
-          !REGEX.paragraph.test(m.text) &&
-          !REGEX.listStructure.test(m.text) &&
-          !REGEX.codeBlock.test(m.text)) {
+      if (m.text.length > 300 && countDemandActions(m.text) >= 3) patterns.demandOverloads++;
+      if (m.text.length > 500 && !REGEX.paragraph.test(m.text) && !REGEX.listStructure.test(m.text) && !REGEX.codeBlock.test(m.text)) {
         patterns.longUnstructured++;
       }
 
     } else if (m.role === 'assistant') {
-      countToolUses(m.content, stats);
+      const toolUses = extractToolUses(m.content);
+      sessionOutcome.toolUses += toolUses.length;
+      toolUsage.total += toolUses.length;
+
+      for (const t of toolUses) {
+        const cat = categorizeTool(t.name);
+        toolUsage.byCategory[cat] = (toolUsage.byCategory[cat] || 0) + 1;
+        toolUsage.byName[t.name] = (toolUsage.byName[t.name] || 0) + 1;
+
+        if (cat === 'fileEdit') {
+          sessionOutcome.fileEdits++;
+          const filePath = t.input && (t.input.file_path || t.input.notebook_path);
+          if (filePath) {
+            sessionOutcome.distinctFiles.add(filePath);
+            distinctFilesTouched.add(filePath);
+          }
+        } else if (cat === 'bash') {
+          sessionOutcome.bashCalls++;
+        } else if (cat === 'read') {
+          sessionOutcome.reads++;
+        } else if (cat === 'skill') {
+          const skillName = t.input && t.input.skill;
+          if (skillName) {
+            toolUsage.skillsUsed[skillName] = (toolUsage.skillsUsed[skillName] || 0) + 1;
+            sessionOutcome.skillsInvoked.push(skillName);
+          }
+        } else if (cat === 'mcp') {
+          const server = extractMcpServer(t.name);
+          if (server) {
+            toolUsage.mcpServers[server] = (toolUsage.mcpServers[server] || 0) + 1;
+            sessionOutcome.mcpInvoked.push(server);
+          }
+        } else if (cat === 'subagent') {
+          sessionOutcome.subagentCalls++;
+        } else if (cat === 'planMode') {
+          sessionOutcome.planModeUses++;
+        }
+      }
+
       if (m.text && !isInjectedAssistantMessage(m.text)) {
         stats.assistantMessages++;
         totalAssistantChars += m.text.length;
@@ -617,41 +714,43 @@ for (const fileName of sessionFiles) {
     }
   }
 
-  // ─── Sequential pattern detection (per-session) ─────────────────────────
+  // Ended cleanly: last meaningful message is a user ack OR has completion signal
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg.role === 'user') {
+    if (sessionOutcome.hasCompletionSignal || matchesAny(lastMsg.text, 'blindAccept') || matchesAny(lastMsg.text, 'completion')) {
+      sessionOutcome.endedCleanly = true;
+    }
+  } else {
+    // Last is assistant — check if assistant ended with no pending question
+    if (!/[?？]\s*$/.test((lastMsg.text || '').trim())) {
+      sessionOutcome.endedCleanly = true;
+    }
+  }
 
+  sessionOutcome.distinctFilesCount = sessionOutcome.distinctFiles.size;
+  delete sessionOutcome.distinctFiles;
+  sessionOutcomes.push(sessionOutcome);
+
+  // Sequential patterns
   const userMsgs = messages.filter(m => m.role === 'user');
 
-  // Retry loops: 3 consecutive similar user messages
   for (let i = 2; i < userMsgs.length; i++) {
     const s1 = jaccard(userMsgs[i - 2].text, userMsgs[i - 1].text);
     const s2 = jaccard(userMsgs[i - 1].text, userMsgs[i].text);
     if (s1 > 0.5 && s2 > 0.5) patterns.retryLoops++;
   }
 
-  // Topic drifts: 3 consecutive unrelated messages (Jaccard < 0.03)
-  // Also skip if both messages share tech stack or filePath
   let consecutiveBreaks = 0;
   for (let i = 1; i < userMsgs.length; i++) {
-    if (userMsgs[i].text.length < 30 || userMsgs[i - 1].text.length < 30) {
-      consecutiveBreaks = 0;
-      continue;
-    }
+    if (userMsgs[i].text.length < 30 || userMsgs[i - 1].text.length < 30) { consecutiveBreaks = 0; continue; }
     const s = jaccard(userMsgs[i - 1].text, userMsgs[i].text);
-    // Check if both share a file path prefix (same area of code)
     const bothHavePath = REGEX.filePath.test(userMsgs[i - 1].text) && REGEX.filePath.test(userMsgs[i].text);
     if (s < 0.03 && !bothHavePath) {
       consecutiveBreaks++;
-      if (consecutiveBreaks >= 2) {
-        patterns.topicDrifts++;
-        consecutiveBreaks = 0;
-      }
-    } else {
-      consecutiveBreaks = 0;
-    }
+      if (consecutiveBreaks >= 2) { patterns.topicDrifts++; consecutiveBreaks = 0; }
+    } else { consecutiveBreaks = 0; }
   }
 
-  // Blind accepts: short ack after assistant turn with output
-  // Improvement: don't count if the user gave a clear action directive within last 3 turns
   for (let i = 1; i < messages.length; i++) {
     if (messages[i].role !== 'user') continue;
     const u = messages[i];
@@ -662,52 +761,29 @@ for (const fileName of sessionFiles) {
     const prevHasCode = prev.text && /```/.test(prev.text);
     const prevHasTool = hasAssistantToolUse(prev.content);
     if (!prevHasCode && !prevHasTool) continue;
-    // Substance check: if the short message contains actual feedback, skip
     const hasSubstance = /因为|但是|不过|问题|修改|错|不对|because|but|however|change|issue|wrong|fix/i.test(u.text);
     if (hasSubstance) continue;
-    // Context check: if a clear directive was given in the prior 3 user messages, skip
     let hadRecentDirective = false;
     let userCount = 0;
     for (let j = i - 1; j >= 0 && userCount < 3; j--) {
       if (messages[j].role !== 'user') continue;
       userCount++;
       if (messages[j].text.length > 50 && (REGEX.filePath.test(messages[j].text) || REGEX.identifier.test(messages[j].text))) {
-        hadRecentDirective = true;
-        break;
+        hadRecentDirective = true; break;
       }
     }
     if (hadRecentDirective) continue;
     patterns.blindAccepts++;
   }
 
-  // No-reply-to-question
   for (let i = 0; i < messages.length - 1; i++) {
     if (messages[i].role !== 'assistant') continue;
     const asst = messages[i].text || '';
     if (!asst.includes('?') && !asst.includes('？')) continue;
     const next = messages[i + 1];
     if (next.role !== 'user') continue;
-    if (next.text.length < 30 && matchesAny(next.text, 'blindAccept')) {
-      patterns.noReplyToQuestion++;
-    }
+    if (next.text.length < 30 && matchesAny(next.text, 'blindAccept')) patterns.noReplyToQuestion++;
   }
-
-  // ─── J/P: Session arc linearity ─────────────────────────────────────────
-
-  if (sessionUserTexts.length >= 3) {
-    let jaccardSum = 0;
-    let dirChanges = 0;
-    for (let i = 1; i < sessionUserTexts.length; i++) {
-      const s = jaccard(sessionUserTexts[i - 1], sessionUserTexts[i]);
-      jaccardSum += s;
-      if (s < 0.08) dirChanges++;
-    }
-    const avgJaccard = jaccardSum / (sessionUserTexts.length - 1);
-    mbti.sessionLinearities.push(avgJaccard);
-    mbti.directionChangeCount += dirChanges;
-  }
-
-  // ─── Sample exchanges ───────────────────────────────────────────────────
 
   if (sampleExchanges.length < MAX_SAMPLES) {
     for (let i = 0; i < messages.length - 1; i++) {
@@ -725,7 +801,6 @@ for (const fileName of sessionFiles) {
     }
   }
 
-  // Key message: longest user message in this session
   if (keyMessages.length < MAX_SAMPLES && userMsgs.length > 0) {
     const longest = userMsgs.reduce((a, b) => (b.text.length > a.text.length ? b : a));
     if (longest && longest.text.length > 0) {
@@ -741,7 +816,7 @@ for (const fileName of sessionFiles) {
   sessionRecords.push(sessionRec);
 }
 
-// ══════════════════════════════════════════════════════════════════════��══════
+// ═════════════════════════════════════════════════════════════════════════════
 // Post-processing
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -751,14 +826,10 @@ stats.avgAssistantMsgChars = stats.assistantMessages ? Math.round(totalAssistant
 const dates = Array.from(dateSet).sort();
 const dateRange = dates.length ? [dates[0], dates[dates.length - 1]] : [null, null];
 
-// ─── Label ratios (global, per human message) ─────────────────────────────
-
 const labelRatios = {};
 for (const key of Object.keys(labelCounts)) {
   labelRatios[key] = stats.humanMessages ? +(labelCounts[key] / stats.humanMessages).toFixed(3) : 0;
 }
-
-// ─── Position-aware ratios ────────────────────────────────────────────────
 
 const signalsByPositionWithRatios = {};
 for (const pos of POSITIONS) {
@@ -772,114 +843,89 @@ for (const pos of POSITIONS) {
     counts: {},
     ratios
   };
-  for (const k of LABEL_KEYS) {
-    signalsByPositionWithRatios[pos].counts[k] = bucket[k];
-  }
+  for (const k of LABEL_KEYS) signalsByPositionWithRatios[pos].counts[k] = bucket[k];
 }
 
-// ─── Confidence level ─────────────────────────────────────────────────────
-
-// Confidence based on both session count and total human messages
-// A single deep session (50+ messages) can be more informative than 5 shallow ones
-const msgCount = stats.humanMessages || 0;
-let confidenceLevel = 'high';
-if (stats.validSessions < 2 && msgCount < 20) confidenceLevel = 'low';
-else if (stats.validSessions < 5 && msgCount < 40) confidenceLevel = 'low';
-else if (stats.validSessions < 15 && msgCount < 100) confidenceLevel = 'medium';
-
-// ─── MBTI signals with balance values ─────────────────────────────────────
-
-const hm = stats.humanMessages || 1;
-const safe = (n, d) => d ? +(n / d).toFixed(3) : 0;
-
-// Behavioral ratios
-const reasoningChainRatio = safe(mbti.reasoningChainCount, hm);
-const directiveRatio = safe(mbti.directiveCount, hm);
-const longMsgRatio = safe(mbti.longMsgCount, hm);
-const shortMsgRatio = safe(mbti.shortMsgCount, hm);
-const concreteRefDensity = safe(mbti.concreteRefCount, hm);
-const abstractRefRatio = safe(mbti.abstractRefCount, hm);
-
-// Session arc linearity (average across sessions)
-const sessionArcLinearity = mbti.sessionLinearities.length
-  ? +(mbti.sessionLinearities.reduce((a, b) => a + b, 0) / mbti.sessionLinearities.length).toFixed(3)
-  : 0.5;
-
-// Balance values: positive = left pole (E, N, T, J), negative = right pole (I, S, F, P)
-// Range roughly -1 to +1, but not clamped — raw signal difference
-
-// E/I: reasoning chains (E) vs terse directives (I)
-const eSignal = reasoningChainRatio * 0.5 + safe(mbti.eCount, hm) * 0.3 + longMsgRatio * 0.2;
-const iSignal = directiveRatio * 0.5 + (1 - safe(mbti.eCount, hm)) * 0.1 + shortMsgRatio * 0.2 + (stats.avgHumanMsgChars < 120 ? 0.2 : 0);
-const eiBalance = +((eSignal - iSignal) / Math.max(eSignal + iSignal, 0.01)).toFixed(3);
-
-// S/N: concrete references (S) vs abstract references (N)
-const sSignal = concreteRefDensity * 0.5 + safe(labelCounts.hasFilePath, hm) * 0.3 + safe(labelCounts.hasIdentifier, hm) * 0.2;
-const nSignal = abstractRefRatio * 0.5 + safe(mbti.nCount, hm) * 0.3 + (1 - concreteRefDensity) * 0.2;
-const snBalance = +((nSignal - sSignal) / Math.max(nSignal + sSignal, 0.01)).toFixed(3);
-
-// T/F: primary from correcting-position keywords, secondary from global
-const correctingTotal = mbti.correctingTCount + mbti.correctingFCount;
-const tFromCorrecting = correctingTotal > 0 ? mbti.correctingTCount / correctingTotal : 0.5;
-const fFromCorrecting = correctingTotal > 0 ? mbti.correctingFCount / correctingTotal : 0.5;
-const tSignal = tFromCorrecting * 0.5 + safe(mbti.tCount, hm) * 0.3 + (1 - safe(mbti.fCount, hm)) * 0.2;
-const fSignal = fFromCorrecting * 0.5 + safe(mbti.fCount, hm) * 0.3 + (1 - safe(mbti.tCount, hm)) * 0.2;
-const tfBalance = +((tSignal - fSignal) / Math.max(tSignal + fSignal, 0.01)).toFixed(3);
-
-// J/P: session linearity (J) vs direction changes (P)
-const dirChangeRatio = safe(mbti.directionChangeCount, hm);
-const jSignal = sessionArcLinearity * 0.4 + safe(mbti.jCount, hm) * 0.3 + (1 - dirChangeRatio) * 0.3;
-const pSignal = dirChangeRatio * 0.4 + safe(mbti.pCount, hm) * 0.3 + (1 - sessionArcLinearity) * 0.3;
-const jpBalance = +((jSignal - pSignal) / Math.max(jSignal + pSignal, 0.01)).toFixed(3);
-
-const mbtiSignals = {
-  basedOnMessages: stats.humanMessages,
-  confidenceLevel,
-
-  // Keyword counts (supplementary)
-  keywords: {
-    eCount: mbti.eCount, nCount: mbti.nCount, tCount: mbti.tCount,
-    fCount: mbti.fCount, jCount: mbti.jCount, pCount: mbti.pCount
-  },
-
-  // Behavioral counts
-  behavioral: {
-    reasoningChainCount: mbti.reasoningChainCount,
-    reasoningChainRatio,
-    directiveCount: mbti.directiveCount,
-    directiveRatio,
-    longMsgRatio,
-    shortMsgRatio,
-    avgHumanMsgChars: stats.avgHumanMsgChars,
-    concreteRefCount: mbti.concreteRefCount,
-    concreteRefDensity,
-    abstractRefCount: mbti.abstractRefCount,
-    abstractRefRatio,
-    correctingTCount: mbti.correctingTCount,
-    correctingFCount: mbti.correctingFCount,
-    sessionArcLinearity,
-    directionChangeCount: mbti.directionChangeCount
-  },
-
-  // Balance values: the primary input for Claude's MBTI judgment
-  // Positive = left pole (E, N, T, J), Negative = right pole (I, S, F, P)
-  balance: {
-    ei: eiBalance,
-    sn: snBalance,
-    tf: tfBalance,
-    jp: jpBalance
-  },
-
-  hints: {
-    ei: 'balance.ei > 0.1 → E (reasoning chains, thinking out loud); < -0.1 → I (terse directives, conclusions only). Key behavioral: reasoningChainRatio (E) vs directiveRatio (I).',
-    sn: 'balance.sn > 0.1 → N (abstract/architecture focus); < -0.1 → S (concrete refs, filePaths, identifiers). Key behavioral: abstractRefRatio (N) vs concreteRefDensity (S).',
-    tf: 'balance.tf > 0.1 → T (logic/performance/correctness); < -0.1 → F (UX/readability/experience). Key behavioral: correcting-position T vs F keyword density.',
-    jp: 'balance.jp > 0.1 → J (linear sessions, planned arcs); < -0.1 → P (direction changes, exploratory). Key behavioral: sessionArcLinearity (J) vs directionChangeCount (P).'
+// ─── cwd resolution & project assets ─────────────────────────────────────
+let resolvedCwd = null;
+if (cwdCandidates.size > 0) {
+  // Pick the most-common candidate that exists on disk
+  const sorted = [...cwdCandidates].sort((a, b) => b.length - a.length);
+  for (const c of sorted) {
+    try {
+      if (fs.existsSync(c) && fs.statSync(c).isDirectory()) { resolvedCwd = c; break; }
+    } catch {}
   }
+}
+if (!resolvedCwd) resolvedCwd = decodeProjectSlug(projectSlug);
+
+const projectAssets = detectProjectAssets(resolvedCwd);
+
+// ─── Outcome totals ──────────────────────────────────────────────────────
+const outcomeTotals = {
+  fileEditCount: toolUsage.byCategory.fileEdit || 0,
+  bashCount: toolUsage.byCategory.bash || 0,
+  readCount: toolUsage.byCategory.read || 0,
+  distinctFilesTouched: distinctFilesTouched.size,
+  sessionsEndedCleanly: sessionOutcomes.filter(s => s.endedCleanly).length,
+  sessionsWithCompletionSignal: sessionOutcomes.filter(s => s.hasCompletionSignal).length,
+  totalSessions: sessionOutcomes.length,
+  cleanEndRatio: sessionOutcomes.length ? +(sessionOutcomes.filter(s => s.endedCleanly).length / sessionOutcomes.length).toFixed(3) : 0,
+  // Density metrics
+  editsPerHumanMsg: stats.humanMessages ? +(toolUsage.byCategory.fileEdit / stats.humanMessages).toFixed(3) : 0,
+  toolsPerHumanMsg: stats.humanMessages ? +(toolUsage.total / stats.humanMessages).toFixed(3) : 0,
+  filesPerHumanMsg: stats.humanMessages ? +(distinctFilesTouched.size / stats.humanMessages).toFixed(3) : 0
+};
+
+// ─── Profile detection ───────────────────────────────────────────────────
+const projectProfile = detectProfile(stats, dateRange, outcomeTotals);
+
+// ─── Density-based confidence ────────────────────────────────────────────
+// Useful-signal density = (sum of non-zero label ratios per msg-equivalent) / message count
+// High density → useful even with few messages.
+const usefulLabelCount = LABEL_KEYS.reduce((sum, k) => sum + (labelCounts[k] || 0), 0);
+const signalDensity = stats.humanMessages ? +(usefulLabelCount / stats.humanMessages).toFixed(3) : 0;
+const outcomeDensity = outcomeTotals.toolsPerHumanMsg;
+
+let confidenceLevel = 'high';
+let confidenceReason = '';
+const hm = stats.humanMessages;
+if (hm < 5) {
+  confidenceLevel = 'low';
+  confidenceReason = 'fewer than 5 user messages';
+} else if (hm < 20 && (signalDensity < 1.5 || outcomeDensity < 0.5)) {
+  confidenceLevel = 'low';
+  confidenceReason = 'small sample with low signal density';
+} else if (hm < 40 && signalDensity < 1) {
+  confidenceLevel = 'medium';
+  confidenceReason = 'moderate sample with low signal density';
+} else if (hm < 50) {
+  confidenceLevel = 'medium';
+  confidenceReason = 'moderate sample size';
+}
+
+// ─── Toolcraft summary (for AI consumption + UI) ─────────────────────────
+const toolcraftSummary = {
+  totalToolCalls: toolUsage.total,
+  byCategory: toolUsage.byCategory,
+  topTools: Object.entries(toolUsage.byName)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count })),
+  mcpServers: Object.entries(toolUsage.mcpServers)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count })),
+  skillsUsed: Object.entries(toolUsage.skillsUsed)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count })),
+  subagentCalls: toolUsage.byCategory.subagent || 0,
+  planModeEntries: toolUsage.byCategory.planMode || 0,
+  customCommands: Object.entries(toolUsage.customCommandsInvoked)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count }))
 };
 
 // ─── Conversation flows (top 5 richest sessions) ─────────────────────────
-
 const flowSessions = [...sessionRecords]
   .sort((a, b) => b.humanMsgs - a.humanMsgs)
   .slice(0, 5);
@@ -890,24 +936,17 @@ function buildFlow(rec) {
     const icon = m.role === 'user' ? '👤' : '🤖';
     const tools = m.tools && m.tools.length ? m.tools.join(',') : '';
     const textClean = m.textShort.replace(/\s+/g, ' ').trim();
-    if (!textClean && tools) {
-      out += `  ${icon} [tool: ${tools}]\n`;
-    } else if (tools) {
-      out += `  ${icon} [${m.length}c + ${tools}]: ${textClean}\n`;
-    } else {
-      out += `  ${icon} [${m.length}c]: ${textClean}\n`;
-    }
+    if (!textClean && tools) out += `  ${icon} [tool: ${tools}]\n`;
+    else if (tools) out += `  ${icon} [${m.length}c + ${tools}]: ${textClean}\n`;
+    else out += `  ${icon} [${m.length}c]: ${textClean}\n`;
   }
-  if (rec.totalMsgs > rec.compact.length) {
-    out += `  ...(+${rec.totalMsgs - rec.compact.length} more)\n`;
-  }
+  if (rec.totalMsgs > rec.compact.length) out += `  ...(+${rec.totalMsgs - rec.compact.length} more)\n`;
   return out;
 }
 
 const sessionFlows = flowSessions.map(buildFlow);
 
 // ─── First message aggregation ────────────────────────────────────────────
-
 const firstMessage = {
   totalSessions: firstMessageAgg.lengths.length,
   avgLength: firstMessageAgg.lengths.length
@@ -921,41 +960,65 @@ const firstMessage = {
 };
 
 // ─── Display name ─────────────────────────────────────────────────────────
-
-const slugParts = path.basename(projectPath).split('-').filter(Boolean);
-const displayName = slugParts[slugParts.length - 1] || path.basename(projectPath);
+const slugParts = projectSlug.split('-').filter(Boolean);
+const displayName = slugParts[slugParts.length - 1] || projectSlug;
 
 // ─── Language detection ───────────────────────────────────────────────────
-
+// Strip code blocks, inline code, and file paths before counting — those
+// inflate English char counts even for Chinese-dominant users.
+// Use BOTH char-ratio and per-message-presence: many Chinese users mix
+// English file paths but think in Chinese.
 let zhChars = 0, enChars = 0;
-for (const km of keyMessages) {
-  zhChars += (km.text.match(/[\u4e00-\u9fff]/g) || []).length;
-  enChars += (km.text.match(/[a-zA-Z]/g) || []).length;
+let zhMsgs = 0, totalMsgs = 0;
+function tallyLang(text) {
+  if (!text) return;
+  const cleaned = text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/[\/\\][\w.@\-/\\]+\.\w+/g, '');
+  const zh = (cleaned.match(/[一-鿿]/g) || []).length;
+  const en = (cleaned.match(/[a-zA-Z]/g) || []).length;
+  zhChars += zh;
+  enChars += en;
+  totalMsgs++;
+  if (zh > 0) zhMsgs++;
 }
-for (const se of sampleExchanges) {
-  zhChars += (se.human.match(/[\u4e00-\u9fff]/g) || []).length;
-  enChars += (se.human.match(/[a-zA-Z]/g) || []).length;
-}
-const dominantLanguage = zhChars / Math.max(zhChars + enChars, 1) > 0.25 ? 'zh' : 'en';
+for (const km of keyMessages) tallyLang(km.text);
+for (const se of sampleExchanges) tallyLang(se.human);
+for (const s of firstMessageAgg.samples) tallyLang(s);
+
+const charZhRatio = zhChars / Math.max(zhChars + enChars, 1);
+const msgZhRatio = zhMsgs / Math.max(totalMsgs, 1);
+// zh-dominant if 15% of cleaned letter-content is Chinese, OR 30% of sampled messages contain any Chinese
+const dominantLanguage = (charZhRatio > 0.15 || msgZhRatio > 0.3) ? 'zh' : 'en';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Output
 // ═════════════════════════════════════════════════════════════════════════════
 
 const result = {
-  schemaVersion: '1.0',
+  schemaVersion: '2.0',
   project: displayName,
+  projectSlug,
   projectPath,
+  resolvedCwd,
   sessionCount: stats.validSessions,
   confidenceLevel,
+  confidenceReason,
+  signalDensity,
+  outcomeDensity,
   dominantLanguage,
   dateRange,
+  projectProfile,
+  projectAssets,
   stats,
   patterns,
+  toolcraftSummary,
+  outcomeTotals,
+  sessionOutcomes,
   labelCounts,
   labelRatios,
   signalsByPosition: signalsByPositionWithRatios,
-  mbtiSignals,
   firstMessage,
   sessionFlows,
   keyMessages,
