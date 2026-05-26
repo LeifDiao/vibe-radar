@@ -1,83 +1,107 @@
 [中文版](./METHODOLOGY_zh.md)
 
-# VibeRadar — Methodology
+# ClaudeRadar — Methodology
 
-> VibeRadar is not focused on code output itself. It focuses on how you build high-quality collaboration with AI.
+> ClaudeRadar is not focused on code output. It focuses on how you build high-quality collaboration with AI as a *platform* — your communication, your engineering setup, and your actual outcomes.
 >
-> This document is both the public scoring specification Claude follows and the rationale behind each score in your report. Use it to understand the scoring logic and adapt it to your team's workflow.
+> This document is the public scoring specification Claude follows and the rationale behind every number in your report.
 
 ---
 
-## 1. Why VibeRadar Exists
+## Design principles
 
-You've probably had hundreds of conversations with Claude Code: shipping features, chasing bugs, reshaping projects. Some sessions move with clarity and momentum. Others are worth revisiting to identify which parts of the collaboration can be improved.
-
-VibeRadar focuses on the behaviors that shape collaboration quality most directly: context setting, instruction quality, course correction, and verification.
-
-It turns those scattered habits into a structured report that helps you identify existing strengths, surface improvement opportunities, and steadily refine the way you work with AI.
-
-Most developer tools measure **output** — lines of code, test coverage, PR throughput. VibeRadar measures **collaboration input**: how you ask, how you guide, how you verify, how you close the loop. Those behaviors shape whether AI collaboration produces faster progress or extra coordination and rework.
-
----
-
-## 2. Design Principles
-
-1. **Evidence first.** Every score should trace back to concrete, countable session signals.
+1. **Evidence first.** Every score traces back to concrete, countable session signals.
 2. **Privacy is non-negotiable.** Session data stays local. No cloud, no API key, no telemetry.
-3. **Stay conservative when data is thin.** Sparse evidence gets confidence-scaled and clearly flagged to avoid over-reading.
-4. **Recommendations should be actionable.** Every report ends with 3 to 7 *actionable* next steps.
-5. **Light enough for repeated use.** The plugin stays under 200 KB, has zero runtime dependencies, and outputs a single HTML file.
-6. **Position changes meaning.** The same signal should not count as the same behavior in every part of a conversation.
-7. **Formulas ensure consistency, Claude adds context.** Start with a reproducible baseline, then allow bounded contextual judgment.
+3. **Density over volume.** A small but signal-dense project shouldn't be penalized.
+4. **N/A is honest.** When a dimension genuinely doesn't apply, say so — don't fake a 50.
+5. **Profile-aware fairness.** Different project types deserve different scoring weights.
+6. **Diagnosis is the gift.** Scores tell you *what*; diagnosis tells you *why* and *what to do*. The diagnosis layer is the most valuable output.
+7. **Position changes meaning.** The same signal in different positions means different things.
+8. **Formulas ensure consistency, Claude adds context.** Reproducible baseline + bounded qualitative adjustment.
 
 ---
 
-## 3. How It Works
+## How it works
 
 ```
 ~/.claude/projects/<slug>/*.jsonl
          │
          ▼
-   [parse-project.mjs]           ← Deterministic. Position-aware signal extraction.
-         │ facts.json
+   [parse-project.mjs]           ← Deterministic. Position-aware signals + tool/skill/MCP/CLAUDE.md detection.
+         │ facts.json (schemaVersion 2.0)
          ▼
-    [Claude in the skill]        ← Reads rubric.json. Two-step scoring: formula + adjustment.
-         │ report.json
+    [Claude in the skill]        ← Reads rubric.json. Two-layer: scoring + diagnosis.
+         │ report.json (schemaVersion 2.0)
          ▼
-   [render-report.mjs]           ← Pure transform. JSON + template → HTML.
+   [render-report.mjs]           ← Pure transform. JSON + template → HTML dashboard.
          │
          ▼
-  ~/.vibe-radar/reports/<slug>-<ts>.html
+  ~/.claude-radar/reports/<slug>-<ts>.html
 ```
 
 Three clearly separated stages:
 
-- **Parser** is deterministic. Same input → same facts. It outputs **position-classified signals** and **behavioral MBTI signals**.
-- **Scorer** is Claude, running inside your Claude Code session. It computes a **formula baseline** from signals, applies **confidence scaling**, and then adds a **bounded qualitative adjustment** (±15 points max) based on message content.
-- **Renderer** produces a single HTML report with data, styles, and JS all inlined.
+- **Parser** — deterministic. Same input → same facts. Now also detects tool usage by category (Skill, MCP, Subagent, Plan mode, custom commands), CLAUDE.md / memory / agents / settings.json presence, per-session outcomes, and auto-classifies the project profile.
+- **Scorer + Diagnoser** — Claude, running inside your Claude Code session. Computes a **formula baseline** from signals, applies **density-based confidence scaling**, applies a **bounded qualitative adjustment** (±15 points max), and then independently produces a **free-form diagnosis layer**.
+- **Renderer** — produces a single HTML dashboard with data, styles, and JS all inlined.
 
-No external API calls, no cloud processing, and no server dependency.
+No external API calls. No cloud processing. No server.
 
 ---
 
-## 4. The Core Innovation: Position-Aware Signals
+## Three categories, nine dimensions
 
-### The Problem with Global Counting
+ClaudeRadar groups dimensions into three categories, each evaluated as a `categoryScore` and weighted into the overall by profile.
 
-A naive approach counts signals globally — a `hasFilePath` is a `hasFilePath` regardless of where it appeared. But the same signal at different conversation positions means different things:
+### A. Communication (3 dims)
+How clearly you direct AI through text.
 
-| Position | `hasFilePath` meaning |
-|---|---|
-| **Opening** (first 2 messages) | Context — setting the stage for AI |
-| **Directing** (new task instruction) | Intent — precisely specifying what to change |
-| **Correcting** (after AI error) | Feedback — pointing to where AI went wrong |
-| **Confirming** (short ack after AI output) | Not meaningful |
+| Dim | Measures | Primary position |
+|---|---|---|
+| **Lock-On** 瞄准力 | Instruction clarity (expected behavior, constraints, identifiers) | directing |
+| **Scene Setting** 画面感 | Background framing in opening messages | opening |
+| **Steering** 导航力 | Correction quality (reasoning, references, retry loops) | correcting |
 
-Global counting caused **signal cross-contamination**: a user who frequently cited file paths got boosted on Intent, Context, AND Feedback from the same behavior. Three dimensions scored from one signal.
+### B. Engineering (3 dims)
+How well you leverage Claude Code as a platform.
 
-### The Solution: Route Signals to Positions
+| Dim | Measures | Primary source |
+|---|---|---|
+| **Toolcraft** 工具力 | Skill / MCP / Subagent / custom commands / Plan / Todo usage | toolcraftSummary |
+| **Architecture** 架构力 | CLAUDE.md / Memory / Agents / Settings setup quality | projectAssets (filesystem) |
+| **Tempo** 节奏感 | Session-level pacing (milestones, summaries, focus, scope) | global signals |
 
-VibeRadar classifies every user message into one of 5 positions before counting signals:
+### C. Outcome (3 dims)
+What actually gets shipped.
+
+| Dim | Measures | Primary source |
+|---|---|---|
+| **Efficiency** 效率 | Work per message (edits, tools, distinct files) | outcomeTotals |
+| **Proof Check** 鉴定术 | Verification habits (tests, reviews, blind-accept) | confirming + global |
+| **Completion** 收尾度 | Clean session closure, no abandoned retries, completion signals | outcomeTotals + patterns |
+
+---
+
+## Project profile (the fairness engine)
+
+Every project is auto-classified by `parse-project.mjs` based on session count, message count, edit ratio, and date span:
+
+| Profile | Detection | Category weights | N/A dimensions |
+|---|---|---|---|
+| `one-shot` | ≤ 2 sessions AND ≤ 15 msgs | comm 0.5 / eng 0.1 / out 0.4 | Architecture, Tempo, Completion |
+| `feature-build` | 3-20 sessions, balanced edit ratio | comm 0.34 / eng 0.33 / out 0.33 | none |
+| `long-running` | ≥ 20 sessions OR > 7-day span | comm 0.3 / eng 0.4 / out 0.3 | none |
+| `learning` | High Q&A : edit ratio (< 0.1 edits/msg) with > 20 msgs | comm 0.7 / eng 0.3 / out 0 | Efficiency, Completion |
+
+**N/A handling:** if a dimension is N/A by profile rule or by its own `applicabilityRule` (e.g. Architecture is N/A when the project's working directory can't be located), it shows N/A in the report. The category score averages only applicable dimensions. If a whole category is N/A, its weight redistributes proportionally to the others.
+
+**Profile is shown next to the overall grade.** A "B" on a one-shot project is not the same as a "B" on a long-running one — and the report makes that explicit.
+
+---
+
+## Position-aware signals
+
+ClaudeRadar classifies every user message into one of 5 positions before counting signals:
 
 | Position | Definition |
 |---|---|
@@ -87,374 +111,261 @@ VibeRadar classifies every user message into one of 5 positions before counting 
 | `confirming` | After AI produced output + user gives short acknowledgment |
 | `continuing` | Everything else |
 
-Each dimension reads signals **only from its designated position**:
-
-| Dimension | Primary Position | What it reads |
-|---|---|---|
-| **Lock-On** | `directing` | Goal clarity, constraints, specificity *in task instructions* |
-| **Scene Setting** | `opening` | Tech stack, file paths, project structure *in session setup* |
-| **Unpack** | `global` | Demand overload, progressive structure (inherently cross-positional) |
-| **Steering** | `correcting` | Reasoning, specificity *in corrections after AI errors* |
-| **Proof Check** | `confirming` + global | Blind accepts *in confirmations* + proactive testing requests |
-| **Tempo** | `global` | Summaries, milestones, topic coherence (inherently cross-positional) |
-
-This makes dimensions **truly orthogonal**: the same raw signal gets routed to different dimensions based on conversational context.
+Each Communication dimension reads signals **only from its designated position**. This makes Lock-On / Scene Setting / Steering genuinely orthogonal — the same `hasFilePath` token cannot inflate all three.
 
 ---
 
-## 5. The 6 Dimensions
+## Two-step scoring per dimension
 
-### Dimension 1 — Lock-On
+Applied to all 9 dimensions:
 
-**What it measures:** How precisely you express what you want *when giving a new instruction*.
-
-**Why it matters:** Goal clarity sets the ceiling for output quality. Vague asks usually produce vague results.
-
-**Position:** `directing` — messages where you're giving AI a new task (not reacting to output).
-
-**Signals (from directing position):**
-
-| Signal | What it captures |
-|---|---|
-| `hasExpectedBehavior` | Goal-setting language |
-| `hasConstraint` | Boundaries and restrictions |
-| `isVague` | Hedging: "help me / fix this" |
-| `hasIdentifier` | References to specific code elements |
-
-**The "Silent Expert" Pattern:**
-
-A common false negative: experienced users write `"change validateToken in src/auth/middleware.ts:45 to async, return Promise<TokenResult>"`. This is already highly precise, but may hit zero keyword matches for `hasExpectedBehavior` or `hasConstraint`. The formula baseline will score it moderately, while Claude's ±15 adjustment can recognize it as high intent and adjust upward.
-
-**Scoring anchors:**
-
-| Score | What it looks like |
-|---|---|
-| 0-20 | Vague one-liners, no goals |
-| 21-40 | Some goals but often unclear |
-| 41-60 | Moderately clear most of the time |
-| 61-80 | Clear goals + constraints in most asks |
-| 81-100 | Consistently clear goals, explicit constraints, and expected outcomes |
-
----
-
-### Dimension 2 — Scene Setting
-
-**What it measures:** How much background you give AI *at the start of a session*.
-
-**Why it matters:** AI begins each new session without context. The more complete the setup, the faster collaboration becomes effective.
-
-**Position:** `opening` — first 2 user messages per session.
-
-**Signals (from opening position):**
-
-| Signal | What it captures |
-|---|---|
-| `hasFilePath` | Concrete file references in session setup |
-| `hasTechStack` | Tech stack mentions in session setup |
-| `hasError` | Error context provided upfront |
-| `firstMessage.avgLength` | Opening message length |
-| `firstMessage.sessionsWithTechStack` | Sessions that name the tech stack in message #1 |
-
----
-
-### Dimension 3 — Unpack
-
-**What it measures:** Whether you break complex tasks into AI-sized pieces.
-
-**Why it matters:** AI works best when scope is focused and bounded. Combining several changes in one message significantly increases the risk of misunderstanding and rework.
-
-**Position:** `global` — task decomposition is measured across all positions.
-
-**Signals:**
-
-| Signal | What it captures |
-|---|---|
-| `patterns.demandOverloads` | 300+ char messages with 3+ action verbs |
-| `patterns.longUnstructured` | 500+ char messages without structure |
-| `labelRatios.progressive` | Stepwise language |
-| `labelRatios.checkpoint` | Phase markers |
-| `stats.avgHumanMsgChars` | Average length (>300 suggests batching) |
-
----
-
-### Dimension 4 — Steering
-
-**What it measures:** How well you correct AI *when it drifts off-course*.
-
-**Why it matters:** AI collaboration benefits from clear correction loops. Strong feedback restores direction quickly and reduces avoidable back-and-forth.
-
-**Position:** `correcting` — messages where you're reacting to incorrect AI output.
-
-**Signals (from correcting position):**
-
-| Signal | What it captures |
-|---|---|
-| `hasReasoning` | Corrections that explain *why* |
-| `hasFilePath` | Corrections citing exact file locations |
-| `hasIdentifier` | Corrections pointing to specific code elements |
-| `patterns.retryLoops` | 3+ similar messages (feedback not sticking) |
-| `patterns.noReplyToQuestion` | Ignoring AI's clarifying questions |
-
-**Why position matters here:** Without position awareness, `hasReasoning` in an opening message ("I'm building this because...") would inflate Feedback score. Position-aware counting ensures only `hasReasoning` in correcting position counts toward Feedback.
-
----
-
-### Dimension 5 — Proof Check
-
-**What it measures:** Whether you verify AI output before trusting it.
-
-**Why it matters:** AI output is not inherently reliable. Without verification, mistakes are more likely to move downstream.
-
-**Position:** `confirming` (for blind accept detection) + `global` (for proactive testing).
-
-**Signals:**
-
-| Signal | What it captures |
-|---|---|
-| `patterns.blindAccepts` | Short ack after AI delivers substantial output (with improved false-positive filtering) |
-| `labelRatios.requestTest` | Asking AI to run tests |
-| `labelRatios.thinkFirst` | Asking AI to explain before coding |
-| `labelRatios.proactiveReview` | Proactively reviewing AI approaches |
-
-**Smart blind accept detection:** A short "ok" after AI output is not counted as blind accept if the user gave a clear, specific directive within the prior 3 turns. This reduces false positives in cases like: "replace all console.log with logger.info" → AI executes → user says "good, next". That is confirmation of execution, not a lack of verification.
-
----
-
-### Dimension 6 — Tempo
-
-**What it measures:** How well you control the *flow* of a long session.
-
-**Why it matters:** Sessions that drift leave half-finished features and context debt.
-
-**Position:** `global` — session flow is inherently cross-positional.
-
-**Signals:**
-
-| Signal | What it captures |
-|---|---|
-| `patterns.topicDrifts` | 3+ consecutive unrelated messages (improved: ignores messages that share file path prefixes) |
-| `labelRatios.summary` | Explicit summaries / recaps |
-| `labelRatios.milestone` | Milestone / progress language |
-| `stats.validSessions` | Sustained usage |
-
-**Where this dimension has limits:** Users who primarily handle short tasks (bug fixes, quick features) will naturally score lower here because they need fewer milestones and summaries. If Architecture is the clear outlier, the report should frame that context explicitly.
-
----
-
-## 6. Scoring: Formula + Adjustment
-
-### Why Not Pure Formula?
-
-Keyword matching has blind spots. A formula alone often misses that a 70-character message with a file path and method name can be more precise than a 300-character message filled with "I hope" and "should." Claude can recover some of that context.
-
-### Why Not Pure Claude Judgment?
-
-LLM scoring carries roughly ±5 points of run-to-run variance. The same data can produce different numbers, which weakens consistency and trust.
-
-### A Balanced Scoring Model
-
-1. **Formula baseline** (deterministic): same data → same score, always.
-2. **Confidence scaling**: scores shrink toward 50 when data is sparse.
-3. **Claude adjustment** (bounded): ±15 points max, must cite evidence.
-
-This keeps variance near ±3 while preserving contextual nuance.
-
-### Baseline Formula Design
-
-Each dimension has a formula in `rubric.json`. The pattern is:
+1. **Formula baseline** (deterministic): plug facts values into the formula in `rubric.json`. Result clamped to [0, 100].
+2. **Density-based confidence scaling**: see §8.
+3. **Claude adjustment** (bounded ±15): must cite evidence from `keyMessages`, `sampleExchanges`, `sessionFlows`, `toolcraftSummary`, etc. No evidence → no adjustment.
 
 ```
-baseline = 50 + Σ (signal_ratio - midpoint) × weight
+finalScore = clamp(adjustedBaseline + claudeAdjustment, 0, 100)
 ```
 
-Where:
-- `50` is the neutral center
-- `midpoint` is the expected ratio for an "average" user (calibrated from early testing)
-- `weight` determines how much each signal moves the score
-- Result is clamped to [0, 100]
-
-The midpoints and weights are transparent and adjustable. You can edit `rubric.json` to better match your team's collaboration standard.
+**The "Silent Expert" pattern** is still recognized — short messages with high precision (`<100 chars` containing file path + identifier + action) get upward adjustments via the adjustment guide.
 
 ---
 
-## 7. MBTI: From Vocabulary to Behavior
+## Density-based confidence
 
-### The Problem with Keyword-Based MBTI
+Confidence considers both session count *and* signal density:
 
-A purely vocabulary-based approach would be: say "architecture" → +1 N. Say "performance" → +1 T. But collaboration style is about *what you do*, not *what words you use*.
+```
+signalDensity = sum(label counts across all positions) / humanMessages
+outcomeDensity = totalToolCalls / humanMessages
+```
 
-### Behavioral Signals
-
-Each axis now uses **behavioral patterns** as the primary signal, with keywords as supplementary:
-
-#### E/I — Thinking Exposure
-
-| | E (Extrovert) | I (Introvert) |
+| Confidence | Condition | Scaling |
 |---|---|---|
-| **Behavioral** | Messages contain reasoning chains (2+ causal connectors in >80 chars) | Messages are terse directives (<120 chars with filePath/identifier) |
-| **Metric** | `reasoningChainRatio` | `directiveRatio` |
-| **What it means** | Thinks out loud, exposes reasoning | Thinks internally, shares conclusions only |
+| `low` | < 5 msgs, OR (< 20 msgs AND low density) | scores shrink: `50 + (baseline - 50) * 0.75` |
+| `medium` | < 40 msgs with low density, OR < 50 msgs | scores shrink: `50 + (baseline - 50) * 0.9` |
+| `high` | otherwise | no scaling |
 
-#### S/N — Reference Granularity
+A user with 8 messages but 3 tool calls per message and clear position-specific signals gets `high` confidence. A user with 80 messages of vague chitchat and no tool use gets `medium` or `low`. This is the fairness fix: density matters more than volume.
 
-| | S (Concrete) | N (Intuitive) |
+---
+
+## Toolcraft scoring
+
+Toolcraft answers: *when the project would benefit from advanced tools, do you reach for them?*
+
+**Philosophy: not using Skills/MCP is NOT a penalty.** Basic competence with Edit/Bash/Read is the baseline (60, B grade). Advanced tools add bonuses on top. Using advanced tools poorly — invoking them and then stalling, or triggering retry loops — is what gets adjusted downward.
+
+Formula:
+
+```
+baseline = 60                                              // basic-user floor = B (Finding Groove)
+  + min(skillsUsed.length, 5) × 5                          // up to +25 for skill diversity
+  + min(mcpServers.length, 4) × 4                          // up to +16 for MCP usage
+  + clamp(subagentCalls / sessions, 0, 2) × 6              // up to +12 for delegation
+  + (planModeEntries > 0 ? 5 : 0)                          // +5 for any Plan use
+  + min(customCommands.length, 3) × 3                      // up to +9 for custom commands
+  + clamp(todoToolUse / humanMsgs, 0, 0.3) × 20            // up to +6 for todo tracking
+, clamped [0, 100]
+```
+
+A user who only uses Edit/Bash/Read scores ~60 (B). A user who chains skill → subagent → custom command with Plan mode and Todo tracking scores 90+ (S). The Claude ±15 adjustment can pull a score down if advanced-tool usage triggered retry loops or sat unused after invocation ("tool theater").
+
+---
+
+## Architecture scoring
+
+Architecture answers: *have you invested in repeatable AI collaboration setup for this project?*
+
+Formula:
+
+```
+baseline = 40
+  + (hasClaudeMd ? 20 : 0)
+  + (claudeMdSize > 500 ? 10 : 0)         // not just a stub
+  + (hasMemoryDir ? 8 : 0)
+  + min(memoryFileCount, 5) × 2
+  + (hasAgentsDir ? 6 : 0)
+  + min(agentCount, 4) × 2
+  + (hasCommandsDir ? 5 : 0)
+  + min(commandCount, 3) × 2
+  + (hasSettingsJson ? 5 : 0)
+, clamped [0, 100]
+```
+
+**Applicability rule:** if the project's working directory can't be located on the current machine, this dimension is N/A — filesystem inspection isn't possible without `cwd` access.
+
+---
+
+## Efficiency scoring
+
+Efficiency is the answer to "small projects get unfairly low scores".
+
+```
+baseline = 50
+  + clamp(toolsPerHumanMsg / 3, 0, 1) × 25
+  + clamp(editsPerHumanMsg / 1.5, 0, 1) × 20
+  + clamp(filesPerHumanMsg / 0.5, 0, 1) × 15
+  - clamp(retryLoops / sessions, 0, 1) × 20
+, clamped [0, 100]
+```
+
+A 3-message bug fix with 5 file edits scores 90+ on Efficiency. A 50-message project with lots of talking and few changes scores low. This is the structural fairness fix — Efficiency rewards what gets done, not how many messages you sent.
+
+---
+
+## Completion scoring
+
+Completion answers: *do your sessions actually close, or do they trail off?*
+
+```
+baseline = 50
+  + (cleanEndRatio - 0.5) × 60
+  + (sessionsWithCompletionSignal / sessions - 0.3) × 50
+  - clamp(retryLoops / sessions, 0, 1) × 15
+  + (labelRatios.hasCompletion - 0.05) × 80
+, clamped [0, 100]
+```
+
+`endedCleanly` is detected when the last meaningful message is either:
+- A user acknowledgment with completion language ("done", "搞定", "ship it", etc.), OR
+- An assistant final message with no pending question
+
+`hasCompletion` checks for explicit closure language across all positions.
+
+---
+
+## Diagnosis layer
+
+Independent of scoring. Produces three pieces:
+
+### 13.1 — `collaborationProfile` (120-180 words)
+A free-form picture of *how this user collaborates with AI*. Replaces MBTI.
+
+**Requirements:**
+- Must reference real behavior from facts ("Across 23 sessions you used 4 distinct skills and invoked subagents 12 times")
+- Must avoid personality archetypes ("You're an INTJ-style architect...")
+- Must be observable behavior, not personality inference
+
+### 13.2 — `coreDiagnosis` (60-100 words)
+One paragraph naming the *single strongest strength* and the *single most critical bottleneck*, with evidence.
+
+Format pattern: `**Strength**: [trait] — [evidence]. **Bottleneck**: [trait] — [evidence + concrete cost].`
+
+### 13.3 — `crossDimensionReading` (1-2 sentences)
+Interprets how dimension scores combine into a behavior pattern.
+
+Examples:
+- "High Lock-On + low Proof Check = you trust AI's execution but not its judgment."
+- "Strong Toolcraft + weak Architecture = you use the platform in flight but haven't invested in persistent setup."
+
+**Diagnosis constraints:**
+- Every claim must cite evidence from facts
+- No fortune-teller tone
+- Bilingual parity (en/zh same meaning, not literal translation)
+
+---
+
+## Suggestion specification (5-7, with prompt rewrites)
+
+**Minimum 5 suggestions, always.** Even for high-scoring users — instead of corrective suggestions, generate "level-up moves" from these sources: (a) push a strong dim from 82 → 90+, (b) cross-pollinate a working habit to a weaker dim, (c) suggest a Skill/MCP/Subagent move tied to actual workflow, (d) recap/milestone/scoping process habits, (e) risk reduction (e.g. "all your skill is in your head, not in CLAUDE.md").
+
+Each suggestion now includes:
+
+```jsonc
+{
+  "dimensionId": "verification",
+  "priority": "high",
+  "title": { "en": "...", "zh": "..." },
+  "body": { "en": "...", "zh": "..." },
+  "evidence": { "en": "Across 8 sessions...", "zh": "..." },
+  "promptRewrite": { "en": "Before you write code, walk me through...", "zh": "..." },
+  "expectedImpact": { "en": "+10-15 Proof Check; minimal Efficiency cost.", "zh": "..." }
+}
+```
+
+**Priority mapping:**
+
+| Score | Priority | Required? |
 |---|---|---|
-| **Behavioral** | Messages frequently cite filePath + identifier together | Messages use architecture/design language without concrete file refs |
-| **Metric** | `concreteRefDensity` | `abstractRefRatio` |
-| **What it means** | Grounds everything in specific code | Thinks in patterns and systems |
+| 0-54 (D/C) | high | yes |
+| 55-69 (B) | medium | usually |
+| 70-84 (A) | low | only with specific gap |
+| 85-100 (S) | — | skip |
 
-#### T/F — Correction Priority
-
-| | T (Logic) | F (Experience) |
-|---|---|---|
-| **Behavioral** | Corrections cite performance, edge cases, correctness | Corrections cite readability, UX, naming, aesthetics |
-| **Metric** | `correctingTCount` | `correctingFCount` |
-| **What it means** | Optimizes for being right | Optimizes for being readable |
-
-Key innovation: **T/F is measured only in correcting position**. In opening messages, "performance" might describe a project requirement, not a personal preference. In corrections, it reveals what the user actually cares about when evaluating AI output.
-
-#### J/P — Session Arc
-
-| | J (Structured) | P (Exploratory) |
-|---|---|---|
-| **Behavioral** | Sessions show linear topic progression (high avg Jaccard between consecutive messages) | Sessions show frequent direction changes (Jaccard drops) |
-| **Metric** | `sessionArcLinearity` | `directionChangeCount` |
-| **What it means** | Plans and follows through | Explores and adapts |
-
-### Balance Values
-
-Instead of independent E/I/S/N/T/F/J/P counts, VibeRadar outputs a **balance value** per axis (-1 to +1):
-
-- `balance.ei > 0.1` → E, `< -0.1` → I, between → marginal
-- Magnitude informs `strength` (0-100 confidence)
-
-### What MBTI Is Not
-
-MBTI here is **descriptive**, not prescriptive. An INTJ isn't "better" than an ESTP. They represent different collaboration styles with different tradeoffs. The value lies in recognizing recurring preferences and typical blind spots.
+**Quality bar:**
+- `promptRewrite` must be a concrete pastable string — not advice like "ask more questions"
+- `expectedImpact` should be honest about trade-offs ("+12 Proof Check, but might slow you down")
+- `evidence` must quote/paraphrase real session content
 
 ---
 
-## 8. Confidence Scaling
+## Visibility limits (still honest)
 
-### Why Sessions Matter
+ClaudeRadar's blind spots, stated explicitly:
 
-| Sessions | `confidenceLevel` | Scaling |
-|---|---|---|
-| < 5 | `low` | Scores shrink 30% toward 50 |
-| 5-14 | `medium` | Scores shrink 15% toward 50 |
-| 15+ | `high` | No scaling |
-
-With 3 sessions, one outlier session can swing a ratio by 0.3. Confidence scaling prevents a "first week" analysis from looking definitive.
-
-The scaling formula: `adjusted = 50 + (baseline - 50) × factor`
-
-This means:
-- A baseline of 80 with low confidence becomes 50 + 30 × 0.7 = **71**
-- A baseline of 30 with low confidence becomes 50 - 20 × 0.7 = **36**
-
-Extreme scores get pulled toward center. Moderate scores barely change. The report explicitly warns when confidence is not high.
+1. **Invisible verification** — users who review AI diffs in their IDE before saying "ok" look like users who blindly accept. We see the conversation, not the screen.
+2. **Silent expertise** — short, surgically precise messages may not trigger keyword counters. The adjustment layer compensates partially.
+3. **Context from CLAUDE.md** — users with rich CLAUDE.md files give AI persistent context without repeating it. ClaudeRadar detects CLAUDE.md existence and size, which feeds Architecture, but the implicit context bonus to other dimensions is harder to attribute.
+4. **Pair programming mode** — rapid short-exchange users will look different from detailed-brief users.
+5. **Language limitations** — keyword signals work for English and Chinese. Other languages will under-score on verbal dimensions.
+6. **Lossy cwd decoding** — Claude Code stores `~/.claude/projects/<slug>` with `/` and ` ` both encoded as `-`. ClaudeRadar tries (a) cwd embedded in jsonl entries, (b) suffix matching, (c) filesystem walk. If all fail, Architecture is marked N/A — not faked.
 
 ---
 
-## 9. Suggestion Generation
+## What we don't measure
 
-Every report produces **3 to 7 improvement suggestions**. The count is driven by real data rather than a fixed template.
+- **Code quality** — that's what linters, tests, and reviewers are for
+- **Language / framework competence** — not our lane
+- **Absolute productivity** — we can't tell you if you shipped more this week
+- **Bug fix success rate** — we see the conversation, not the merge
+- **Security posture** — separate discipline
 
-### Priority Assignment
-
-| Dimension Score | Priority | Required? |
-|---|---|---|
-| 0-54 (D/C) | `high` | Yes |
-| 55-69 (B) | `medium` | Usually |
-| 70-84 (A) | `low` | Only if specific gap |
-| 85-100 (S) | none | Skip |
-
-### Quality Bar
-
-Every suggestion must be:
-
-1. **Specific, not generic.** "Run `npm test` after accepting code", not "test more".
-2. **Tied to concrete evidence.** "You had 14 blind accepts" not "you accept too easily".
-3. **Actionable in one session.** "End each session with a recap", not "become better at architecture".
+We measure **collaboration behavior + engineering setup + outcome density**, not the final shipped artifact.
 
 ---
 
-## 10. Signal Gaps and Visibility Limits
+## Known limitations
 
-VibeRadar states its blind spots explicitly:
-
-1. **Invisible verification.** Users who review AI diffs in their IDE before typing "ok" look identical to users who blindly accept. We can't see outside the conversation.
-
-2. **Silent expertise.** A message like `"make validateToken async in middleware.ts:45"` is highly precise but may trigger zero keyword matches for "expected behavior" or "constraint." The adjustment mechanism partially compensates, but some precision will always remain invisible to keyword matching.
-
-3. **Context from CLAUDE.md.** Users who maintain good CLAUDE.md files give AI persistent context without repeating it in messages. Their Context score may underestimate their actual context-setting behavior.
-
-4. **Pair programming mode.** Users who work side-by-side with AI in rapid short exchanges will look different from users who write detailed briefs. Neither is objectively better, but the scoring model will reflect those different patterns.
-
-5. **Language limitations.** Keyword signals work for English and Chinese. Other languages will under-score on verbal dimensions.
+1. **Small samples still mean wide error bars.** Density-based confidence mitigates over-shrinkage but doesn't eliminate uncertainty. Reports flag this in the profile section.
+2. **Scoring still has run-to-run variance** (~±3 points typical). The diagnosis layer is descriptive enough that minor score wiggles don't change the actionable takeaway.
+3. **Profile classification is heuristic.** A 4-session prototype might be classified as `feature-build` when the user thinks of it as `one-shot`. The rationale string explains *why* — and users can re-run after more sessions.
+4. **Architecture detection requires filesystem access.** If you run the analysis on a different machine than where the project lives, Architecture is N/A.
+5. **The rubric is opinionated.** We define strong AI collaboration as goal-directed + tool-fluent + verification-heavy + closure-oriented. Teams with different preferences can tune `rubric.json`.
 
 ---
 
-## 11. What We Don't Measure
-
-- **Code quality.** That's what linters, tests, and reviewers are for.
-- **Language / framework competence.** Not our lane.
-- **Absolute productivity.** We can't tell you if you shipped more this week.
-- **Bug fix success rate.** We see the conversation, not the outcome.
-- **Security posture.** A separate discipline entirely.
-
-We measure **collaboration behavior in the conversation**, not the final outcome.
-
----
-
-## 12. Known Limitations
-
-1. **Small samples mean wide error bars.** Confidence scaling mitigates but doesn't eliminate. Fewer than 5 sessions will produce explicitly flagged low-confidence reports.
-
-2. **Scoring has run-to-run variance.** ±3 points typical (kept low via formula anchoring). MBTI type is more stable than individual scores.
-
-3. **Current scope is Claude Code sessions.** The rubric is calibrated around long-form collaboration in that environment.
-
-4. **The rubric is opinionated.** We define strong AI collaboration as goal-directed, verification-heavy, and conversation-aware. Teams with different preferences can tune `rubric.json` accordingly.
-
-5. **Position classification is heuristic.** A message classified as "directing" might actually be a correction without explicit correction keywords. Most classifications are directionally right, but edge cases remain.
-
----
-
-## 13. Epistemic Status
+## Epistemic status
 
 **What we do not claim:**
-
 - That this is scientifically validated
-- That INTJ collaborators are "better" than ESTP ones
+- That an `S` collaborator is "better" than a `B` one
 - That a low grade means you're a bad developer
-- That our scoring is the only valid framework
+- That this is the only valid framework
 
 **What we do claim:**
-
-- The 6 dimensions cover the complete ask → verify → close loop
-- Position-aware signals make dimensions genuinely orthogonal
-- Formula + adjustment scoring is reproducible and auditable
-- The report offers **structured feedback** rather than a value judgment
-- Reading the report carefully and applying the top 3 suggestions will usually improve subsequent AI collaboration
-
-VibeRadar exists to help teams refine collaboration habits, not reduce developers to a ranking.
+- 9 dimensions across 3 categories cover the full lifecycle: communicate → engineer → execute → verify → close
+- Position-aware + project-profile-aware scoring is genuinely orthogonal and fair
+- Formula + adjustment + diagnosis combination is reproducible, evidence-grounded, and actionable
+- The diagnosis layer turns scores into structured feedback you can apply in your next session
 
 ---
 
-## 14. How to Change the Scoring
+## How to change the scoring
 
-Everything is encoded in `data/rubric.json`:
+Everything is in `data/rubric.json`:
 
 - **Change baseline formulas** — edit `dimensions.<dim>.baselineFormula`
-- **Change signal routing** — edit `dimensions.<dim>.primaryPosition` and `dimensions.<dim>.signals`
-- **Change adjustment guidance** — edit `dimensions.<dim>.adjustmentGuide`
+- **Change category groupings** — edit `categories.<cat>.dimensionIds`
+- **Change profile weights / N/A rules** — edit `profiles.<profile>.categoryWeights` and `naDimensions`
+- **Change applicability rules** — edit `dimensions.<dim>.applicabilityRule`
 - **Change grade thresholds** — edit `grades[*].range`
-- **Change MBTI profiles** — edit `mbti.profiles`
 - **Change confidence scaling** — edit `scoring.confidenceScaling`
+- **Change diagnosis spec** — edit `diagnosis.*`
+- **Change suggestion spec** — edit `suggestions.*`
 
-No code changes needed. Claude reads `rubric.json` every run.
+No code changes needed. Claude re-reads `rubric.json` every run.
 
 ---
 
-*VibeRadar is open source. The methodology remains transparent so teams can understand the scoring logic and adjust it when needed.*
+*ClaudeRadar is open source. The methodology stays transparent so teams can understand the scoring logic and adapt it to their workflow.*
