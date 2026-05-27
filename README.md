@@ -33,6 +33,8 @@
 > 完整中文版 → [README_zh.md](./README_zh.md)
 
 ---
+<img width="1756" height="844" alt="Screenshot 2026-05-27 at 11 07 10 AM" src="https://github.com/user-attachments/assets/2364e5b4-a46b-4209-94e6-b45f5b1916fd" />
+---
 
 ## What the report includes
 
