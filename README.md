@@ -2,18 +2,35 @@
 
 > **A Claude Code plugin that reads every session in `~/.claude/projects/` and grades how well you collaborate with AI.** 9 dimensions across 3 categories — Communication, Engineering, Outcome. Returns a free-form AI diagnosis and at-least-5 pastable improvement prompts. 100% local. Dashboard view.
 
-🌏 [中文版](./README_zh.md) · 📖 [Methodology](./docs/METHODOLOGY.md) · ⚖️ [License](#license)
+🌏 [中文版](./README_zh.md) · 📖 [Methodology](./docs/METHODOLOGY.md) · ⚖️ [License](./LICENSE)
+
+> **中文简介：** 一款 Claude Code 插件，扫描你 `~/.claude/projects/` 里的真实会话历史，从「沟通力 / 工程力 / 成效」三个层面、9 个维度评估你和 AI 的协作质量。生成一份 AI 撰写的协作诊断和至少 5 条可直接粘贴的改写 prompt，所有计算 100% 本地完成。完整中文文档 → [README_zh.md](./README_zh.md)
 
 ---
 
 ## Key features
 
-- **9 dimensions across 3 categories** — Communication / Engineering / Outcome. The Engineering category evaluates how you leverage the platform: Skills, MCP, Subagents, CLAUDE.md, Plan mode.
-- **Project profile auto-detection** — every project is auto-classified (one-shot / feature-build / long-running / learning). A 3-message bugfix isn't unfairly compared to a 50-session feature. Dimensions can be `N/A` per profile.
-- **Free-form AI diagnosis** — a 150-word collaboration profile, a core strength + bottleneck paragraph, and a cross-dimension reading.
-- **Pastable prompt rewrites** — every suggestion ships with a concrete prompt you can copy directly into your next session.
-- **CWD detection** — `/claude-radar` first asks "analyze this project?" based on your current directory. No more scrolling through 100 projects.
-- **Dashboard layout** — left nav + right content, with scroll-tracked highlighting.
+**🎯 Reads your actual sessions, not synthetic prompts.** Most "AI productivity" tools test you on contrived examples. ClaudeRadar analyzes the real conversations you've had with Claude — every directing, correcting, and confirming message, plus every tool call you made.
+
+**💬 AI writes you a coaching note, not just a scoreboard.** Beyond the 9 scores, you get a 150-word collaboration profile that describes how *you specifically* work with AI, a one-paragraph core diagnosis pairing your strongest strength with your most critical bottleneck, and a cross-dimension reading that explains how your behaviors combine. Every claim cites evidence from your real session.
+
+**📋 Every suggestion is a pastable prompt.** No "be more thoughtful" advice. Each of the 5–7 improvement suggestions comes with a concrete prompt you can copy-paste straight into your next session, plus the expected score impact and the trade-off.
+
+**⚖️ Project-aware fairness.** A 3-message bugfix isn't compared to a 50-session feature build. ClaudeRadar auto-classifies each project (`one-shot` / `feature-build` / `long-running` / `learning`) and applies different category weights and N/A rules. Density-based confidence prevents short-but-substantive sessions from being unfairly shrunk.
+
+**🛠 Scores how you use the platform, not just how you talk.** The Engineering category specifically measures Skills, MCP servers, Subagents, CLAUDE.md, Plan mode, and custom commands — the leverage most users underuse. Not using advanced tools is fine; using them poorly (retry loops, plan-then-abandon) is what hurts.
+
+**🔒 100% local, zero telemetry.** Read-only access to `~/.claude/projects/`. No API key, no cloud, no network calls. Bilingual (English + 中文) reports built in. The whole run takes about 30 seconds.
+
+> **中文要点：**
+> - **🎯 评估你真实的 Claude Code 会话历史**，不靠人工题库
+> - **💬 AI 给你写诊断信**：协作画像 + 强项/瓶颈段 + 维度交叉解读，每条结论都引用真实证据
+> - **📋 每条建议都附可粘贴 prompt**，不讲空话；附预期分数影响和取舍说明
+> - **⚖️ 按项目类型公平评分**：bugfix 不和大项目用同一把尺子，密度高的短会话不会被打压
+> - **🛠 专门评估平台杠杆**：Skill / MCP / Subagent / CLAUDE.md / Plan 模式 —— 不用不扣分，用得差才扣分
+> - **🔒 100% 本地，零数据上传**，约 30 秒出报告，原生中英双语
+>
+> 完整中文版 → [README_zh.md](./README_zh.md)
 
 ---
 
@@ -151,7 +168,15 @@ About 250 KB. Zero runtime dependencies.
 
 ## License
 
-CC-BY-NC-4.0 — free for non-commercial use.
+ClaudeRadar is released under **CC BY-NC 4.0**:
+
+- ✅ **Free** for personal, educational, research, and any non-commercial use
+- ✅ **Forking, modifying, sharing** is welcomed — please attribute the original repo and indicate any changes you made
+- ❌ **Commercial use** (bundling into paid products, internal use beyond individual scope in for-profit companies, paid SaaS hosting, selling reports/analyses based on the scoring) requires a separate license
+
+**For commercial licensing**, contact: **leifdiao@gmail.com**
+
+See [LICENSE](./LICENSE) for the full terms, including the 中文版说明.
 
 ---
 
