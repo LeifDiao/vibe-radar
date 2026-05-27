@@ -1,16 +1,16 @@
 # ClaudeRadar
 
-> **一个 Claude Code 插件，扫描 `~/.claude/projects/` 里所有会话，评估你和 AI 协作的质量。** 从「沟通力 / 工程力 / 成效」三个层面、9 个维度打分，给出 AI 自由撰写的诊断和至少 5 条可直接粘贴的 prompt 改写。全程本地。Dashboard 视图。
+> **一款 Claude Code 插件，读取你的项目对话记录，评估你和 AI 协作的质量。** 从「沟通力 / 工程力 / 成效」三个层面、9 个维度打分，输出 AI 自由撰写的诊断、至少 5 条可直接粘贴的 prompt 改写，以及一个专业可读的 HTML dashboard。全程本地。
 
 🌏 [English](./README.md) · 📖 [方法论](./docs/METHODOLOGY_zh.md) · ⚖️ [协议](./LICENSE)
 
-> **English summary:** A Claude Code plugin that reads your real session history in `~/.claude/projects/` and grades how you collaborate with AI across 9 dimensions in 3 categories. Returns an AI-written diagnosis and at-least-5 pastable improvement prompts. 100% local. Full English docs → [README.md](./README.md)
+> **English summary:** A Claude Code plugin that reads your project conversation records and grades how you collaborate with AI across 9 dimensions in 3 categories. Returns an AI-written diagnosis, at-least-5 pastable improvement prompts, and a professional, readable HTML dashboard. 100% local. Full English docs → [README.md](./README.md)
 
 ---
 
 ## 核心特性
 
-**🎯 评估你真实的会话历史，不靠人工题库。** 大多数"AI 协作分析"工具用合成提示考你，ClaudeRadar 分析你这个月真的和 Claude 聊过的内容 —— 每条 directing / correcting / confirming 消息、每次工具调用都被纳入评估。
+**🎯 评估你真实的项目对话记录，不靠人工题库。** 大多数"AI 协作分析"工具用合成提示考你，ClaudeRadar 分析你这个月真的和 Claude 聊过的内容 —— 每条 directing / correcting / confirming 消息、每次工具调用都被纳入评估。
 
 **💬 AI 给你写诊断信，而不是只给分数。** 9 个分数之外，你会拿到一份 150 字的协作画像（描述你具体的协作方式）、一段"强项 + 瓶颈"核心诊断、维度交叉解读，每条结论都引用真实证据。
 
@@ -20,15 +20,15 @@
 
 **🛠 专门评估你怎么用平台，不只是怎么说话。** 工程力类目衡量你对 Skill、MCP、Subagent、CLAUDE.md、Plan 模式、自定义命令的使用 —— 大多数用户都没用足的杠杆。**不用高级工具不扣分，用了但用不好（retry loop、Plan 进了又抛）才扣分。**
 
-**🔒 全本地，零数据上传。** 只读访问 `~/.claude/projects/`，不发任何网络请求、无 API key、无云端。原生中英双语报告。整个流程约 30 秒。
+**🔒 全本地，零数据上传。** 只读访问本地项目对话记录，不发任何网络请求、无 API key、无云端。原生中英双语报告。输出一个专业可读的 HTML dashboard。
 
 > **English highlights:**
-> - **🎯 Reads your actual sessions**, not synthetic prompts
+> - **🎯 Reads your real project conversation records**, not synthetic prompts
 > - **💬 AI writes a coaching note** with evidence — not just scores
 > - **📋 Every suggestion is a pastable prompt** + expected impact
 > - **⚖️ Project-aware fairness** — a bugfix isn't compared to a big feature
 > - **🛠 Evaluates platform leverage** (Skill / MCP / Subagent / CLAUDE.md / Plan mode)
-> - **🔒 100% local, zero telemetry**, bilingual, ~30s end-to-end
+> - **🔒 100% local, zero telemetry**, bilingual, professional, readable HTML dashboard
 >
 > Full English version → [README.md](./README.md)
 
@@ -36,7 +36,7 @@
 
 ## 报告里有什么
 
-运行 `/claude-radar`，你会得到一个单文件 HTML dashboard：
+运行 `/claude-radar`，你会得到一个单文件、专业可读的 HTML dashboard：
 
 **总评等级** —— 从 S 到 D，旁边永远标注你项目的画像类型，让你知道自己是用什么尺子被量。
 
@@ -88,7 +88,7 @@ claude --plugin-dir ~/claude-radar
 
 1. ClaudeRadar 检测你的当前工作目录，问"是不是分析这个项目"
 2. 确认即用，或者从「最近 10 个项目」列表中选
-3. 等待约 30 秒解析 + 诊断
+3. 等待解析 + 诊断完成（时长视项目大小而定）
 4. Dashboard 自动在浏览器打开
 
 ---
