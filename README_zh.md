@@ -2,18 +2,35 @@
 
 > **一个 Claude Code 插件，扫描 `~/.claude/projects/` 里所有会话，评估你和 AI 协作的质量。** 从「沟通力 / 工程力 / 成效」三个层面、9 个维度打分，给出 AI 自由撰写的诊断和至少 5 条可直接粘贴的 prompt 改写。全程本地。Dashboard 视图。
 
-🌏 [English](./README.md) · 📖 [方法论](./docs/METHODOLOGY_zh.md) · ⚖️ [协议](#license)
+🌏 [English](./README.md) · 📖 [方法论](./docs/METHODOLOGY_zh.md) · ⚖️ [协议](./LICENSE)
+
+> **English summary:** A Claude Code plugin that reads your real session history in `~/.claude/projects/` and grades how you collaborate with AI across 9 dimensions in 3 categories. Returns an AI-written diagnosis and at-least-5 pastable improvement prompts. 100% local. Full English docs → [README.md](./README.md)
 
 ---
 
 ## 核心特性
 
-- **9 维度 × 3 大类** —— Communication / Engineering / Outcome。Engineering 类评估的是你"把 Claude Code 平台用到几成"——Skill、MCP、Subagent、CLAUDE.md、Plan 模式。
-- **项目画像自动识别** —— 每个项目自动归类（一次性任务 / 功能开发 / 长期项目 / 学习探索）。3 条消息修完的小 bug 不会和 50 个 session 的大项目用同一把尺子。某些维度可以按 profile 标 N/A。
-- **AI 自由诊断** —— 150 字协作画像 + 核心诊断（优势 + 瓶颈）+ 维度交叉解读。
-- **可粘贴的 Prompt 改写** —— 每条改进建议都附带一段可直接复制到下次会话的具体 prompt。
-- **CWD 检测** —— `/claude-radar` 先根据当前目录问"是不是这个项目？"。100 个项目不用滚屏选。
-- **Dashboard 布局** —— 左侧导航 + 右侧内容，滚动跟随高亮。
+**🎯 评估你真实的会话历史，不靠人工题库。** 大多数"AI 协作分析"工具用合成提示考你，ClaudeRadar 分析你这个月真的和 Claude 聊过的内容 —— 每条 directing / correcting / confirming 消息、每次工具调用都被纳入评估。
+
+**💬 AI 给你写诊断信，而不是只给分数。** 9 个分数之外，你会拿到一份 150 字的协作画像（描述你具体的协作方式）、一段"强项 + 瓶颈"核心诊断、维度交叉解读，每条结论都引用真实证据。
+
+**📋 每条建议都带可粘贴 prompt。** 不讲"要多思考"这种空话。5–7 条改进建议每条都附一段下次会话可以直接复制粘贴的具体话术，外加预期分数影响和取舍说明。
+
+**⚖️ 按项目类型公平评分。** 3 条消息修完的 bug 不会和 50 个 session 的功能开发用同一把尺子。ClaudeRadar 自动归类（一次性 / 功能开发 / 长期 / 学习），按类别套用不同的权重和 N/A 规则。密度驱动的 confidence 让短但信号密集的会话不会被无理由打折。
+
+**🛠 专门评估你怎么用平台，不只是怎么说话。** 工程力类目衡量你对 Skill、MCP、Subagent、CLAUDE.md、Plan 模式、自定义命令的使用 —— 大多数用户都没用足的杠杆。**不用高级工具不扣分，用了但用不好（retry loop、Plan 进了又抛）才扣分。**
+
+**🔒 全本地，零数据上传。** 只读访问 `~/.claude/projects/`，不发任何网络请求、无 API key、无云端。原生中英双语报告。整个流程约 30 秒。
+
+> **English highlights:**
+> - **🎯 Reads your actual sessions**, not synthetic prompts
+> - **💬 AI writes a coaching note** with evidence — not just scores
+> - **📋 Every suggestion is a pastable prompt** + expected impact
+> - **⚖️ Project-aware fairness** — a bugfix isn't compared to a big feature
+> - **🛠 Evaluates platform leverage** (Skill / MCP / Subagent / CLAUDE.md / Plan mode)
+> - **🔒 100% local, zero telemetry**, bilingual, ~30s end-to-end
+>
+> Full English version → [README.md](./README.md)
 
 ---
 
@@ -151,7 +168,15 @@ claude-radar/
 
 ## 协议
 
-CC-BY-NC-4.0 —— 非商业用途免费。
+ClaudeRadar 采用 **CC BY-NC 4.0** 协议授权：
+
+- ✅ **免费** 用于个人、教育、研究等任何非商业场景
+- ✅ **允许** fork、修改、分享 —— 请注明原作者和原仓库出处，并标注是否做了修改
+- ❌ **商业用途**（打包进付费产品、营利组织超出员工个人评估范围、付费 SaaS 托管、基于评分卖报告/分析等）需要单独的商业授权
+
+**商业授权咨询：** **leifdiao@gmail.com**
+
+完整协议条款（含英文版）请见 [LICENSE](./LICENSE)。
 
 ---
 
